@@ -1,4 +1,4 @@
-#include "vec.h"
+#include <smew/vec.h>
 
 #include <assert.h>
 #include <stdint.h>

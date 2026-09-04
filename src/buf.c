@@ -1,7 +1,7 @@
-#include <stdint.h>
+#include <smew/buf.h>
+#include <smew/vec.h>
 
-#include "vec.h"
-#include "buf.h"
+#include <stdint.h>
 
 BufResult buf_read(SourceBuffer *buf, FILE *input_file) {
 	size_t n_read_bytes = 0;

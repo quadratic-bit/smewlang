@@ -1,9 +1,9 @@
+#include <smew/buf.h>
+#include <smew/vec.h>
+
 #include <assert.h>
 #include <ctype.h>
 #include <stdio.h>
-
-#include "vec.h"
-#include "buf.h"
 
 typedef enum {
 	LEX_OK,
