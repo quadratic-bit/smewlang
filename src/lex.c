@@ -63,6 +63,8 @@ typedef enum {
 	TOK_DOT,
 	TOK_QUESTION,
 	TOK_SEMICOLON,
+
+	TOK_EOF
 } TokenKind;
 
 static const char *token_kind_name(TokenKind kind) {
@@ -131,6 +133,8 @@ static const char *token_kind_name(TokenKind kind) {
 		return "QUESTION";
 	case TOK_SEMICOLON:
 		return "SEMICOLON";
+	case TOK_EOF:
+		return "EOF";
 	}
 }
 
@@ -313,6 +317,7 @@ static LexResult consume_token(Lexer *lexer) {
 	size_t tok_start = lexer->cur;
 	char cur_ch = lexer->src->data[lexer->cur];
 	TokenKind kind = TOK_UNK;
+	int is_comment = 0;
 
 	switch (cur_ch) {
 	case '(':
@@ -361,6 +366,7 @@ static LexResult consume_token(Lexer *lexer) {
 		kind = TOK_PERCENT;
 		break;
 	case '/':
+		if (peek_lexer_ch(lexer, 1) == '/') is_comment = 1;
 		kind = TOK_SLASH;
 		break;
 	case '*':
@@ -381,6 +387,14 @@ static LexResult consume_token(Lexer *lexer) {
 	case '^':
 		kind = TOK_HAT;
 		break;
+	}
+
+	if (is_comment) {
+		lexer->cur += 2;
+		while (cur_in_range(lexer) && cur_lexer_ch(lexer) != '\n') {
+			lexer->cur++;
+		}
+		return LEX_OK;
 	}
 
 	if (kind != TOK_UNK) {
@@ -409,12 +423,13 @@ static Lexer lex(SourceBuffer *buf) {
 	vec_init(&lexer.toks,  START_TOKENS_CAP);
 	vec_init(&lexer.diags, 1);
 
-	while (lexer.cur < lexer.src->len) {
+	while (cur_in_range(&lexer)) {
 		if (consume_token(&lexer) != LEX_OK) {
 			return lexer;
 		}
 	}
 
+	lex_emit(&lexer, TOK_EOF, lexer.cur, lexer.cur);
 	return lexer;
 }
 
