@@ -12,7 +12,8 @@ typedef enum {
 } LexResult;
 
 typedef enum {
-	LEX_DIAG_INVALID_IDENTIFIER
+	LEX_DIAG_INVALID_IDENTIFIER,
+	LEX_DIAG_UNKNOWN_CHARACTER
 } LexDiagKind;
 
 typedef struct {
@@ -155,6 +156,7 @@ typedef struct {
 	LexDiags diags;
 } Lexer;
 
+// XXX: fails silently
 static void add_diag(Lexer *lexer, LexDiagKind kind, Span span) {
 	LexDiag diag = {.kind = kind, .span = span};
 	vec_push(&lexer->diags, &diag);
@@ -164,6 +166,8 @@ static const char *diag_message(LexDiag *diag) {
 	switch (diag->kind) {
 	case LEX_DIAG_INVALID_IDENTIFIER:
 		return "Identifier must not start with a digit";
+	case LEX_DIAG_UNKNOWN_CHARACTER:
+		return "Encountered unsupported symbol";
 	}
 }
 
@@ -190,7 +194,8 @@ static void print_diag(Lexer *lexer, LexDiag *diag) {
 		putchar(' ');
 	}
 	printf(CLR_RED);
-	for (size_t j = 0; j < diag->span.len; ++j) {
+	putchar('^');
+	for (size_t j = 1; j < diag->span.len; ++j) {
 		putchar('~');
 	}
 	puts(CLR_END);
@@ -392,8 +397,9 @@ static LexResult consume_token(Lexer *lexer) {
 		return lex_identifier(lexer);
 	}
 
-	printf("%c (%d)\n", cur_ch, cur_ch);
-	assert(0 && "Unimplemented");
+	lexer->cur++;
+	add_diag(lexer, LEX_DIAG_UNKNOWN_CHARACTER, span_from(lexer, tok_start));
+	return lex_emit(lexer, TOK_UNK, tok_start, lexer->cur);
 }
 
 static Lexer lex(SourceBuffer *buf) {
