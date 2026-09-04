@@ -6,7 +6,7 @@
 #include "buf.h"
 
 typedef struct {
-	const char *src;
+	size_t start;
 	size_t len;
 } Span;
 
@@ -119,8 +119,8 @@ static VecResult lex_emit(Lexer *lexer, TokenKind kind, size_t start, size_t end
 	Token tok = {
 		.kind = kind,
 		.span = {
-			.src = lexer->src->data + start,
-			.len = end              - start,
+			.start = start,
+			.len   = end - start,
 		},
 	};
 
@@ -210,9 +210,6 @@ static VecResult consume_token(Lexer *lexer) {
 	case '<':
 		kind = TOK_LT;
 		break;
-
-	// literal or identifier
-	default: break;
 	}
 
 	if (kind != TOK_UNDEF) {
@@ -288,7 +285,7 @@ int main(int argc, char **argv) {
 
 	for (size_t i = 0; i < lexer.toks.len; ++i) {
 		Token tok = lexer.toks.data[i];
-		printf("%-12s %.*s\n", token_kind_name(tok.kind), (int)tok.span.len, tok.span.src);
+		printf("%-12s %.*s\n", token_kind_name(tok.kind), (int)tok.span.len, lexer.src->data + tok.span.start);
 	}
 
 	lex_free(&lexer);
