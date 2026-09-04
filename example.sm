@@ -1,0 +1,17 @@
+pub fn load(path: Path): Result[Report, LoadError] in FileSystem, Allocator {
+    with file = FileSystem.open(path)? {
+        entries = parse(file.read_all()?)?;
+
+        mut total = 0;
+
+        loop entry in entries {
+            total = total + entry.amount
+        };
+
+        if total > 0 {
+            Report(entries, total)
+        } else {
+            return EmptyReport
+        }
+    }
+}
