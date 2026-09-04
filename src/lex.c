@@ -34,11 +34,28 @@ typedef enum {
 	TOK_LBRACKET,
 	TOK_RBRACKET,
 
-	TOK_EQUAL,
 	TOK_PLUS,
 	TOK_MINUS,
+	TOK_PERCENT,
+	TOK_SLASH,
+	TOK_STAR,
+	TOK_ASSIGN,
+	TOK_PLUS_ASSIGN,
+	TOK_MINUS_ASSIGN,
+
 	TOK_GT,
 	TOK_LT,
+
+	TOK_GE,
+	TOK_LE,
+
+	TOK_EQUAL,
+	TOK_AND,
+	TOK_OR,
+
+	TOK_PIPE,
+	TOK_AMP,
+	TOK_HAT,
 
 	TOK_COMMA,
 	TOK_COLON,
@@ -67,16 +84,42 @@ static const char *token_kind_name(TokenKind kind) {
 		return "BRACE:L";
 	case TOK_RBRACE:
 		return "BRACE:R";
-	case TOK_EQUAL:
-		return "EQUAL";
+	case TOK_ASSIGN:
+		return "ASSIGN";
 	case TOK_PLUS:
 		return "PLUS";
 	case TOK_MINUS:
 		return "MINUS";
+	case TOK_PERCENT:
+		return "PERCENT";
+	case TOK_SLASH:
+		return "SLASH";
+	case TOK_STAR:
+		return "STAR";
+	case TOK_PLUS_ASSIGN:
+		return "ASSIGN:PLUS";
+	case TOK_MINUS_ASSIGN:
+		return "ASSIGN:MINUS";
+	case TOK_EQUAL:
+		return "EQUAL";
 	case TOK_GT:
 		return "GT";
 	case TOK_LT:
 		return "LT";
+	case TOK_GE:
+		return "GE";
+	case TOK_LE:
+		return "LE";
+	case TOK_AND:
+		return "AND";
+	case TOK_OR:
+		return "OR";
+	case TOK_PIPE:
+		return "PIPE";
+	case TOK_AMP:
+		return "AMP";
+	case TOK_HAT:
+		return "HAT";
 	case TOK_COMMA:
 		return "COMMA";
 	case TOK_COLON:
@@ -172,6 +215,13 @@ static inline char cur_lexer_ch(Lexer *lexer) {
 	return lexer->src->data[lexer->cur];
 }
 
+static inline char peek_lexer_ch(Lexer *lexer, size_t offset) {
+	if (lexer->cur + offset >= lexer->src->len) {
+		return '\0';
+	}
+	return lexer->src->data[lexer->cur + offset];
+}
+
 static void consume_whitespace(Lexer *lexer) {
 	while (cur_in_range(lexer) && isspace((unsigned char)cur_lexer_ch(lexer))) {
 		lexer->cur++;
@@ -242,11 +292,20 @@ static LexResult lex_identifier(Lexer *lexer) {
 	return lex_emit(lexer, TOK_IDENTIFIER, tok_start, lexer->cur);
 }
 
+static TokenKind match_sym(Lexer *lexer, char sym, TokenKind match, TokenKind miss) {
+	if (peek_lexer_ch(lexer, 1) == sym) {
+		lexer->cur++;
+		return match;
+	}
+	return miss;
+}
+
 static LexResult consume_token(Lexer *lexer) {
 	consume_whitespace(lexer);
 	assert(lexer->cur <= lexer->src->len);
 	if (lexer->cur == lexer->src->len) return LEX_OK;
 
+	size_t tok_start = lexer->cur;
 	char cur_ch = lexer->src->data[lexer->cur];
 	TokenKind kind = TOK_UNK;
 
@@ -285,25 +344,42 @@ static LexResult consume_token(Lexer *lexer) {
 		kind = TOK_SEMICOLON;
 		break;
 	case '=':
-		kind = TOK_EQUAL;
+		kind = match_sym(lexer, '=', TOK_EQUAL, TOK_ASSIGN);
 		break;
 	case '+':
-		kind = TOK_PLUS;
+		kind = match_sym(lexer, '=', TOK_PLUS_ASSIGN, TOK_PLUS);
 		break;
 	case '-':
-		kind = TOK_MINUS;
+		kind = match_sym(lexer, '=', TOK_MINUS_ASSIGN, TOK_MINUS);
+		break;
+	case '%':
+		kind = TOK_PERCENT;
+		break;
+	case '/':
+		kind = TOK_SLASH;
+		break;
+	case '*':
+		kind = TOK_STAR;
 		break;
 	case '>':
-		kind = TOK_GT;
+		kind = match_sym(lexer, '=', TOK_GE, TOK_GT);
 		break;
 	case '<':
-		kind = TOK_LT;
+		kind = match_sym(lexer, '=', TOK_LE, TOK_LT);
+		break;
+	case '|':
+		kind = match_sym(lexer, '|', TOK_OR, TOK_PIPE);
+		break;
+	case '&':
+		kind = match_sym(lexer, '&', TOK_AND, TOK_AMP);
+		break;
+	case '^':
+		kind = TOK_HAT;
 		break;
 	}
 
 	if (kind != TOK_UNK) {
-		size_t tok_start = lexer->cur++;
-		return lex_emit(lexer, kind, tok_start, lexer->cur);
+		return lex_emit(lexer, kind, tok_start, ++lexer->cur);
 	}
 
 	if (isdigit((unsigned char)cur_ch))
