@@ -15,7 +15,7 @@ BufResult buf_read(SourceBuffer *buf, FILE *input_file) {
 			}
 
 			size_t new_buf_size = buf->cap * 2;
-			if (vec_grow(buf, new_buf_size) == VEC_ERR) return BUF_ERR;
+			if (vec_grow(buf, new_buf_size) != VEC_OK) return BUF_ERR;
 
 			n_reserved_bytes = buf->cap - buf->len;
 		}

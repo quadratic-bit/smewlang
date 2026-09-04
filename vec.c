@@ -51,7 +51,8 @@ VecResult _vec_push_impl(void **buf, size_t *cap, size_t *len, size_t elem_size,
 			new_cap = *cap * 2;
 		}
 
-		if (_vec_grow_impl(buf, cap, elem_size, new_cap) == VEC_ERR) return VEC_ERR;
+		VecResult grow_ret = _vec_grow_impl(buf, cap, elem_size, new_cap);
+		if (grow_ret != VEC_OK) return grow_ret;
 	}
 
 	memcpy((char *)*buf + (*len * elem_size), elem, elem_size);

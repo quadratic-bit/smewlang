@@ -5,13 +5,22 @@
 #include "vec.h"
 #include "buf.h"
 
+typedef enum {
+	LEX_OK,
+	LEX_ERR_OOM,
+} LexResult;
+
+typedef enum {
+	LEX_DIAG_INVALID_IDENTIFIER
+} LexDiagKind;
+
 typedef struct {
 	size_t start;
 	size_t len;
 } Span;
 
 typedef enum {
-	TOK_UNDEF,
+	TOK_UNK,
 
 	TOK_IDENTIFIER,
 
@@ -39,8 +48,8 @@ typedef enum {
 
 static const char *token_kind_name(TokenKind kind) {
 	switch (kind) {
-	case TOK_UNDEF:
-		return "UNDEFINED";
+	case TOK_UNK:
+		return "UNKNOWN";
 	case TOK_IDENTIFIER:
 		return "IDENTIFIER";
 	case TOK_LITERAL_INT:
@@ -88,34 +97,100 @@ typedef struct {
 typedef Vec(Token) Tokens;
 
 typedef struct {
+	LexDiagKind kind;
+	Span        span;
+} LexDiag;
+
+typedef Vec(LexDiag) LexDiags;
+
+typedef struct {
 	SourceBuffer *src;
-	Tokens toks;
-	size_t cur;
+	size_t        cur;
+
+	Tokens   toks;
+	LexDiags diags;
 } Lexer;
 
-static inline int lex_in_range(Lexer *lexer) {
+static void add_diag(Lexer *lexer, LexDiagKind kind, Span span) {
+	LexDiag diag = {.kind = kind, .span = span};
+	vec_push(&lexer->diags, &diag);
+}
+
+static const char *diag_message(LexDiag *diag) {
+	switch (diag->kind) {
+	case LEX_DIAG_INVALID_IDENTIFIER:
+		return "Identifier must not start with a digit";
+	}
+}
+
+static void print_diag(Lexer *lexer, LexDiag *diag) {
+	printf("Error: %s\n", diag_message(diag));
+	size_t nl_cur = diag->span.start;
+	size_t left_pad = 0;
+	while (nl_cur > 0 && lexer->src->data[nl_cur] != '\n') {
+		nl_cur--;
+	}
+	if (lexer->src->data[nl_cur] == '\n') nl_cur++;
+	for (size_t j = nl_cur; j < diag->span.start; ++j) {
+		putchar(lexer->src->data[j]);
+		left_pad++;
+	}
+	printf("%.*s", (int)diag->span.len, lexer->src->data + diag->span.start);
+	nl_cur = diag->span.start + diag->span.len;
+	while (nl_cur < lexer->src->len && lexer->src->data[nl_cur] != '\n') {
+		putchar(lexer->src->data[nl_cur]);
+		nl_cur++;
+	}
+	putchar('\n');
+	for (size_t j = 0; j < left_pad; j++) {
+		putchar(' ');
+	}
+	printf("\x1b[0;31m");
+	for (size_t j = 0; j < diag->span.len; ++j) {
+		putchar('~');
+	}
+	puts("\x1b[0m");
+}
+
+static inline int cur_in_range(Lexer *lexer) {
 	return lexer->cur < lexer->src->len;
 }
 
-static inline char lex_cur_char(Lexer *lexer) {
-	assert(lex_in_range(lexer) && "Lexer cursor is out of source bounds");
+static inline int is_ident_continue(char ch) {
+	unsigned char c = (unsigned char)ch;
+	return isalnum(c) || c == '_';
+}
+
+static inline int is_ident_start(char ch) {
+	unsigned char c = (unsigned char)ch;
+	return isalpha(c) || c == '_';
+}
+
+static inline char cur_lexer_ch(Lexer *lexer) {
+	assert(cur_in_range(lexer) && "Lexer cursor is out of source bounds");
 	return lexer->src->data[lexer->cur];
 }
 
 static void consume_whitespace(Lexer *lexer) {
-	while (lex_in_range(lexer) && isspace((unsigned char)lex_cur_char(lexer))) {
+	while (cur_in_range(lexer) && isspace((unsigned char)cur_lexer_ch(lexer))) {
 		lexer->cur++;
 	}
 }
 
 static void consume_digits(Lexer *lexer) {
-	while (lex_in_range(lexer) && isdigit((unsigned char)lex_cur_char(lexer))) {
+	while (cur_in_range(lexer) && isdigit((unsigned char)cur_lexer_ch(lexer))) {
+		lexer->cur++;
+	}
+}
+
+static void consume_ident_remaining(Lexer *lexer) {
+	while (cur_in_range(lexer) && is_ident_continue(cur_lexer_ch(lexer))) {
 		lexer->cur++;
 	}
 }
 
 // start inclusive, end exclusive
-static VecResult lex_emit(Lexer *lexer, TokenKind kind, size_t start, size_t end) {
+static LexResult lex_emit(Lexer *lexer, TokenKind kind, size_t start, size_t end) {
 	Token tok = {
 		.kind = kind,
 		.span = {
@@ -124,42 +199,55 @@ static VecResult lex_emit(Lexer *lexer, TokenKind kind, size_t start, size_t end
 		},
 	};
 
-	return vec_push(&lexer->toks, &tok);
+	if (vec_push(&lexer->toks, &tok) != VEC_OK) {
+		return LEX_ERR_OOM;
+	}
+
+	return LEX_OK;
 }
 
-static VecResult lex_literal_int(Lexer *lexer) {
-	assert(lex_in_range(lexer));
+static Span span_from(Lexer *lexer, size_t start) {
+	assert(lexer->cur > start && "Cannot start span from future");
+	return (Span){
+		.start = start,
+		.len   = lexer->cur - start,
+	};
+}
 
-	size_t tok_start = lexer->cur;
+static LexResult lex_literal_int(Lexer *lexer) {
+	assert(cur_in_range(lexer));
+	assert(isdigit((unsigned char)cur_lexer_ch(lexer)) && "Expected to be on a digit");
+
+	size_t tok_start = lexer->cur++;
 	consume_digits(lexer);
+
+	if (cur_in_range(lexer) && is_ident_continue(cur_lexer_ch(lexer))) {
+		// Invalid identifier (starts with digits). Parse the remaining part then recover
+		consume_ident_remaining(lexer);
+		add_diag(lexer, LEX_DIAG_INVALID_IDENTIFIER, span_from(lexer, tok_start));
+		return lex_emit(lexer, TOK_UNK, tok_start, lexer->cur);
+	}
 
 	return lex_emit(lexer, TOK_LITERAL_INT, tok_start, lexer->cur);
 }
 
-static inline int is_ident_ch(char ch) {
-	unsigned char c = (unsigned char)ch;
-	return isalnum(c) || c == '_';
-}
+static LexResult lex_identifier(Lexer *lexer) {
+	assert(cur_in_range(lexer));
+	assert(is_ident_start(cur_lexer_ch(lexer)) && "Expected to be on a valid identifier start");
 
-static VecResult lex_identifier(Lexer *lexer) {
-	assert(lex_in_range(lexer));
-
-	size_t tok_start = lexer->cur;
-
-	while (lex_in_range(lexer) && is_ident_ch(lex_cur_char(lexer))) {
-		lexer->cur++;
-	}
+	size_t tok_start = lexer->cur++;
+	consume_ident_remaining(lexer);
 
 	return lex_emit(lexer, TOK_IDENTIFIER, tok_start, lexer->cur);
 }
 
-static VecResult consume_token(Lexer *lexer) {
+static LexResult consume_token(Lexer *lexer) {
 	consume_whitespace(lexer);
 	assert(lexer->cur <= lexer->src->len);
-	if (lexer->cur == lexer->src->len) return VEC_OK;
+	if (lexer->cur == lexer->src->len) return LEX_OK;
 
 	char cur_ch = lexer->src->data[lexer->cur];
-	TokenKind kind = TOK_UNDEF;
+	TokenKind kind = TOK_UNK;
 
 	switch (cur_ch) {
 	case '(':
@@ -212,21 +300,23 @@ static VecResult consume_token(Lexer *lexer) {
 		break;
 	}
 
-	if (kind != TOK_UNDEF) {
+	if (kind != TOK_UNK) {
 		size_t tok_start = lexer->cur++;
 		return lex_emit(lexer, kind, tok_start, lexer->cur);
 	}
 
-	if (isdigit((unsigned char)cur_ch)) {
-		return lex_literal_int(lexer);
-	} else if (is_ident_ch(cur_ch)) {
-		kind = TOK_IDENTIFIER;
-	} else {
-		printf("%c (%d)\n", cur_ch, cur_ch);
-		assert(0 && "Unimplemented");
+	if (isdigit((unsigned char)cur_ch))
+	{
+		LexResult ret = lex_literal_int(lexer);
+		return ret;
+	}
+	else if (is_ident_start(cur_ch))
+	{
+		return lex_identifier(lexer);
 	}
 
-	return lex_identifier(lexer);
+	printf("%c (%d)\n", cur_ch, cur_ch);
+	assert(0 && "Unimplemented");
 }
 
 static Lexer lex(SourceBuffer *buf) {
@@ -236,7 +326,7 @@ static Lexer lex(SourceBuffer *buf) {
 	vec_init(&lexer.toks, START_TOKENS_CAP);
 
 	while (lexer.cur < lexer.src->len) {
-		if (consume_token(&lexer) == VEC_ERR) {
+		if (consume_token(&lexer) != LEX_OK) {
 			return lexer;
 		}
 	}
@@ -246,6 +336,7 @@ static Lexer lex(SourceBuffer *buf) {
 
 static void lex_free(Lexer *lexer) {
 	vec_free(&lexer->toks);
+	vec_free(&lexer->diags);
 }
 
 int main(int argc, char **argv) {
@@ -286,6 +377,11 @@ int main(int argc, char **argv) {
 	for (size_t i = 0; i < lexer.toks.len; ++i) {
 		Token tok = lexer.toks.data[i];
 		printf("%-12s %.*s\n", token_kind_name(tok.kind), (int)tok.span.len, lexer.src->data + tok.span.start);
+	}
+
+	for (size_t i = 0; i < lexer.diags.len; ++i) {
+		LexDiag *diag = &lexer.diags.data[i];
+		print_diag(&lexer, diag);
 	}
 
 	lex_free(&lexer);
