@@ -1,4 +1,5 @@
 #include <smew/buf.h>
+#include <smew/colors.h>
 #include <smew/vec.h>
 
 #include <assert.h>
@@ -124,7 +125,7 @@ static const char *diag_message(LexDiag *diag) {
 }
 
 static void print_diag(Lexer *lexer, LexDiag *diag) {
-	printf("Error: %s\n", diag_message(diag));
+	printf(CLR_RED "Error:" CLR_YELLOW " %s" CLR_END "\n", diag_message(diag));
 	size_t nl_cur = diag->span.start;
 	size_t left_pad = 0;
 	while (nl_cur > 0 && lexer->src->data[nl_cur] != '\n') {
@@ -145,11 +146,11 @@ static void print_diag(Lexer *lexer, LexDiag *diag) {
 	for (size_t j = 0; j < left_pad; j++) {
 		putchar(' ');
 	}
-	printf("\x1b[0;31m");
+	printf(CLR_RED);
 	for (size_t j = 0; j < diag->span.len; ++j) {
 		putchar('~');
 	}
-	puts("\x1b[0m");
+	puts(CLR_END);
 }
 
 static inline int cur_in_range(Lexer *lexer) {
@@ -376,7 +377,12 @@ int main(int argc, char **argv) {
 
 	for (size_t i = 0; i < lexer.toks.len; ++i) {
 		Token tok = lexer.toks.data[i];
-		printf("%-12s %.*s\n", token_kind_name(tok.kind), (int)tok.span.len, lexer.src->data + tok.span.start);
+		printf(CLR_GREEN "%s" CLR_END, token_kind_name(tok.kind));
+		if (tok.kind == TOK_IDENTIFIER || tok.kind == TOK_LITERAL_INT) {
+			printf("(" CLR_MAGENTA "%.*s" CLR_END ")",
+			       (int)tok.span.len, lexer.src->data + tok.span.start);
+		}
+		putchar('\n');
 	}
 
 	for (size_t i = 0; i < lexer.diags.len; ++i) {
