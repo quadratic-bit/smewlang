@@ -400,7 +400,8 @@ static Lexer lex(SourceBuffer *buf) {
 	const size_t START_TOKENS_CAP = 128;
 
 	Lexer lexer = {.src = buf, .cur = 0};
-	vec_init(&lexer.toks, START_TOKENS_CAP);
+	vec_init(&lexer.toks,  START_TOKENS_CAP);
+	vec_init(&lexer.diags, 1);
 
 	while (lexer.cur < lexer.src->len) {
 		if (consume_token(&lexer) != LEX_OK) {

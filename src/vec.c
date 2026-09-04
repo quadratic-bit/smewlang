@@ -26,6 +26,7 @@ VecResult _vec_grow_impl(void **buf, size_t *cap, size_t elem_size, size_t new_s
 
 
 void _vec_init_impl(void **buf, size_t *cap, size_t *len, size_t elem_size, size_t init_cap) {
+	assert(init_cap > 0 && "Initial capacity must not be zero");
 	*cap = init_cap;
 	*len = 0;
 	*buf = malloc(init_cap * elem_size);
