@@ -1,5 +1,6 @@
 #include <smew/buf.h>
 #include <smew/colors.h>
+#include <smew/line.h>
 #include <smew/vec.h>
 
 #include <assert.h>
@@ -153,6 +154,8 @@ typedef struct {
 typedef Vec(LexDiag) LexDiags;
 
 typedef struct {
+	const char *filename;
+
 	SourceBuffer *src;
 	size_t        cur;
 
@@ -176,7 +179,13 @@ static const char *diag_message(LexDiag *diag) {
 }
 
 static void print_diag(Lexer *lexer, LexDiag *diag) {
-	printf(CLR_RED "Error:" CLR_YELLOW " %s" CLR_END "\n", diag_message(diag));
+	SourceLocation loc = locate_offset(lexer->src->data, diag->span.start);
+	printf("%s:%zu:%zu " CLR_RED "Error: %s" CLR_END "\n",
+		lexer->filename,
+		loc.line + 1,
+		loc.col  + 1,
+		diag_message(diag)
+	);
 	size_t nl_cur = diag->span.start;
 	size_t left_pad = 0;
 	while (nl_cur > 0 && lexer->src->data[nl_cur] != '\n') {
@@ -416,10 +425,10 @@ static LexResult consume_token(Lexer *lexer) {
 	return lex_emit(lexer, TOK_UNK, tok_start, lexer->cur);
 }
 
-static Lexer lex(SourceBuffer *buf) {
+static Lexer lex(SourceBuffer *buf, const char *filename) {
 	const size_t START_TOKENS_CAP = 128;
 
-	Lexer lexer = {.src = buf, .cur = 0};
+	Lexer lexer = {.filename = filename, .src = buf, .cur = 0};
 	vec_init(&lexer.toks,  START_TOKENS_CAP);
 	vec_init(&lexer.diags, 1);
 
@@ -471,7 +480,7 @@ int main(int argc, char **argv) {
 	fwrite(source.data, 1, source.len, stdout);
 	puts("\n");
 
-	Lexer lexer = lex(&source);
+	Lexer lexer = lex(&source, input_filename);
 
 	for (size_t i = 0; i < lexer.toks.len; ++i) {
 		Token tok = lexer.toks.data[i];
