@@ -15,7 +15,8 @@ typedef enum {
 
 typedef enum {
 	LEX_DIAG_INVALID_IDENTIFIER,
-	LEX_DIAG_UNKNOWN_CHARACTER
+	LEX_DIAG_UNKNOWN_CHARACTER,
+	LEX_DIAG_UNCLOSED_STRING_LITERAL
 } LexDiagKind;
 
 typedef struct {
@@ -38,6 +39,7 @@ typedef enum {
 	TOK_KEY_ELSE,
 
 	TOK_LITERAL_INT,
+	TOK_LITERAL_STRING,
 
 	TOK_LPAREN,
 	TOK_RPAREN,
@@ -86,6 +88,8 @@ static const char *token_kind_name(TokenKind kind) {
 		return "IDENTIFIER";
 	case TOK_LITERAL_INT:
 		return "LITERAL:INT";
+	case TOK_LITERAL_STRING:
+		return "LITERAL:STRING";
 	case TOK_KEY_PUB:
 		return "KEYWORD:PUB";
 	case TOK_KEY_FN:
@@ -201,6 +205,8 @@ static const char *diag_message(LexDiag *diag) {
 		return "Identifier must not start with a digit";
 	case LEX_DIAG_UNKNOWN_CHARACTER:
 		return "Encountered unsupported symbol";
+	case LEX_DIAG_UNCLOSED_STRING_LITERAL:
+		return "Unclosed string literal";
 	}
 }
 
@@ -278,6 +284,12 @@ static void consume_digits(Lexer *lexer) {
 	}
 }
 
+static void consume_string_body(Lexer *lexer) {
+	while (cur_in_range(lexer) && cur_lexer_ch(lexer) != '"' && cur_lexer_ch(lexer) != '\n') {
+		lexer->cur++;
+	}
+}
+
 static void consume_ident_remaining(Lexer *lexer) {
 	while (cur_in_range(lexer) && is_ident_continue(cur_lexer_ch(lexer))) {
 		lexer->cur++;
@@ -324,6 +336,26 @@ static LexResult lex_literal_int(Lexer *lexer) {
 	}
 
 	return lex_emit(lexer, TOK_LITERAL_INT, tok_start, lexer->cur);
+}
+
+static LexResult lex_literal_string(Lexer *lexer) {
+	assert(cur_in_range(lexer));
+	assert(cur_lexer_ch(lexer) == '"' && "Expected to be on a quotation mark");
+
+	size_t tok_start = lexer->cur++;
+	consume_string_body(lexer);
+
+	if (!cur_in_range(lexer) || cur_lexer_ch(lexer) == '\n') {
+		// Unclosed string literal
+		add_diag(lexer, LEX_DIAG_UNCLOSED_STRING_LITERAL, span_from(lexer, tok_start));
+		return lex_emit(lexer, TOK_UNK, tok_start, lexer->cur);
+	}
+	assert(cur_in_range(lexer));
+	assert(cur_lexer_ch(lexer) == '"');
+
+	lexer->cur++;  // <- consume remaining quotationg mark
+
+	return lex_emit(lexer, TOK_LITERAL_STRING, tok_start, lexer->cur);
 }
 
 static int compare_span(const char *token, size_t len, const char *ref) {
@@ -459,12 +491,16 @@ static LexResult consume_token(Lexer *lexer) {
 		return lex_emit(lexer, kind, tok_start, ++lexer->cur);
 	}
 
+	if (cur_ch == '"') {
+		return lex_literal_string(lexer);
+	}
+
 	if (isdigit((unsigned char)cur_ch))
 	{
-		LexResult ret = lex_literal_int(lexer);
-		return ret;
+		return lex_literal_int(lexer);
 	}
-	else if (is_ident_start(cur_ch))
+
+	if (is_ident_start(cur_ch))
 	{
 		return lex_identifier(lexer);
 	}
@@ -534,7 +570,10 @@ int main(int argc, char **argv) {
 	for (size_t i = 0; i < lexer.toks.len; ++i) {
 		Token tok = lexer.toks.data[i];
 		printf(CLR_GREEN "%s" CLR_END, token_kind_name(tok.kind));
-		if (tok.kind == TOK_IDENTIFIER || tok.kind == TOK_LITERAL_INT) {
+		if (tok.kind == TOK_IDENTIFIER  ||
+		    tok.kind == TOK_LITERAL_INT ||
+		    tok.kind == TOK_LITERAL_STRING)
+		{
 			printf("(" CLR_MAGENTA "%.*s" CLR_END ")",
 			       (int)tok.span.len, lexer.src->data + tok.span.start);
 		}
