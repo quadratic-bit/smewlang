@@ -6,6 +6,7 @@
 #include <assert.h>
 #include <ctype.h>
 #include <stdio.h>
+#include <string.h>
 
 typedef enum {
 	LEX_OK,
@@ -26,6 +27,15 @@ typedef enum {
 	TOK_UNK,
 
 	TOK_IDENTIFIER,
+
+	TOK_KEY_PUB,
+	TOK_KEY_FN,
+	TOK_KEY_IN,
+	TOK_KEY_WITH,
+	TOK_KEY_MUT,
+	TOK_KEY_LOOP,
+	TOK_KEY_IF,
+	TOK_KEY_ELSE,
 
 	TOK_LITERAL_INT,
 
@@ -76,6 +86,22 @@ static const char *token_kind_name(TokenKind kind) {
 		return "IDENTIFIER";
 	case TOK_LITERAL_INT:
 		return "LITERAL:INT";
+	case TOK_KEY_PUB:
+		return "KEYWORD:PUB";
+	case TOK_KEY_FN:
+		return "KEYWORD:FN";
+	case TOK_KEY_IN:
+		return "KEYWORD:IN";
+	case TOK_KEY_WITH:
+		return "KEYWORD:WITH";
+	case TOK_KEY_MUT:
+		return "KEYWORD:MUT";
+	case TOK_KEY_LOOP:
+		return "KEYWORD:LOOP";
+	case TOK_KEY_IF:
+		return "KEYWORD:IF";
+	case TOK_KEY_ELSE:
+		return "KEYWORD:ELSE";
 	case TOK_LPAREN:
 		return "PAREN:L";
 	case TOK_RPAREN:
@@ -300,6 +326,29 @@ static LexResult lex_literal_int(Lexer *lexer) {
 	return lex_emit(lexer, TOK_LITERAL_INT, tok_start, lexer->cur);
 }
 
+static int compare_span(const char *token, size_t len, const char *ref) {
+	const size_t ref_len = strlen(ref);
+	if (ref_len != len) return 0;
+	return !memcmp(token, ref, len);
+}
+
+// PERF: a perfect hashtable would do better
+static TokenKind try_keyword_cast(Lexer *lexer, size_t start) {
+	size_t end = lexer->cur; // exclusive
+	assert(end > start);
+	size_t tok_len = end - start;
+	const char *tok = lexer->src->data + start;
+	if (compare_span(tok, tok_len, "pub" )) return TOK_KEY_PUB;
+	if (compare_span(tok, tok_len, "fn"  )) return TOK_KEY_FN;
+	if (compare_span(tok, tok_len, "in"  )) return TOK_KEY_IN;
+	if (compare_span(tok, tok_len, "with")) return TOK_KEY_WITH;
+	if (compare_span(tok, tok_len, "mut" )) return TOK_KEY_MUT;
+	if (compare_span(tok, tok_len, "loop")) return TOK_KEY_LOOP;
+	if (compare_span(tok, tok_len, "if"  )) return TOK_KEY_IF;
+	if (compare_span(tok, tok_len, "else")) return TOK_KEY_ELSE;
+	return TOK_IDENTIFIER;
+}
+
 static LexResult lex_identifier(Lexer *lexer) {
 	assert(cur_in_range(lexer));
 	assert(is_ident_start(cur_lexer_ch(lexer)) && "Expected to be on a valid identifier start");
@@ -307,7 +356,7 @@ static LexResult lex_identifier(Lexer *lexer) {
 	size_t tok_start = lexer->cur++;
 	consume_ident_remaining(lexer);
 
-	return lex_emit(lexer, TOK_IDENTIFIER, tok_start, lexer->cur);
+	return lex_emit(lexer, try_keyword_cast(lexer, tok_start), tok_start, lexer->cur);
 }
 
 static TokenKind match_sym(Lexer *lexer, char sym, TokenKind match, TokenKind miss) {
