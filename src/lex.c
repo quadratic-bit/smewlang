@@ -53,6 +53,7 @@ typedef enum {
 	TOK_PERCENT,
 	TOK_SLASH,
 	TOK_STAR,
+	TOK_BANG,
 	TOK_ASSIGN,
 	TOK_PLUS_ASSIGN,
 	TOK_MINUS_ASSIGN,
@@ -64,6 +65,7 @@ typedef enum {
 	TOK_LE,
 
 	TOK_EQUAL,
+	TOK_NOT_EQUAL,
 	TOK_AND,
 	TOK_OR,
 
@@ -130,12 +132,16 @@ static const char *token_kind_name(TokenKind kind) {
 		return "SLASH";
 	case TOK_STAR:
 		return "STAR";
+	case TOK_BANG:
+		return "BANG";
 	case TOK_PLUS_ASSIGN:
 		return "ASSIGN:PLUS";
 	case TOK_MINUS_ASSIGN:
 		return "ASSIGN:MINUS";
 	case TOK_EQUAL:
 		return "EQUAL";
+	case TOK_NOT_EQUAL:
+		return "EQUAL:NOT";
 	case TOK_GT:
 		return "GT";
 	case TOK_LT:
@@ -461,6 +467,9 @@ static LexResult consume_token(Lexer *lexer) {
 		break;
 	case '*':
 		kind = TOK_STAR;
+		break;
+	case '!':
+		kind = match_sym(lexer, '=', TOK_NOT_EQUAL, TOK_BANG);
 		break;
 	case '>':
 		kind = match_sym(lexer, '=', TOK_GE, TOK_GT);

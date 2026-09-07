@@ -18,8 +18,8 @@ No classes and inheritance also, will go with traits.
 Also no runtime reflection, but yes AST/syntax-based hygienic macros.
 
 Roadmap:
-- [ ] Lexer <-- I'm here
-- [ ] Parser
+- [x] Lexer
+- [ ] Parser  <-- I'm here
 - [ ] HIR lowering (a.k.a. desugaring)
 - [ ] Scope and name resolution
 - [ ] Semantic analysis (i.e. type checking)
