@@ -37,6 +37,10 @@ typedef enum {
 	TOK_KEY_LOOP,
 	TOK_KEY_IF,
 	TOK_KEY_ELSE,
+	TOK_KEY_STRUCT,
+	TOK_KEY_RETURN,
+	TOK_KEY_MOVE,
+	TOK_KEY_LET,
 
 	TOK_LITERAL_INT,
 	TOK_LITERAL_STRING,
@@ -73,6 +77,8 @@ typedef enum {
 	TOK_AMP,
 	TOK_HAT,
 
+	TOK_ARROW,
+
 	TOK_COMMA,
 	TOK_COLON,
 	TOK_DOT,
@@ -108,6 +114,14 @@ static const char *token_kind_name(TokenKind kind) {
 		return "KEYWORD:IF";
 	case TOK_KEY_ELSE:
 		return "KEYWORD:ELSE";
+	case TOK_KEY_STRUCT:
+		return "KEYWORD:STRUCT";
+	case TOK_KEY_RETURN:
+		return "KEYWORD:RETURN";
+	case TOK_KEY_MOVE:
+		return "KEYWORD:MOVE";
+	case TOK_KEY_LET:
+		return "KEYWORD:LET";
 	case TOK_LPAREN:
 		return "PAREN:L";
 	case TOK_RPAREN:
@@ -160,6 +174,8 @@ static const char *token_kind_name(TokenKind kind) {
 		return "AMP";
 	case TOK_HAT:
 		return "HAT";
+	case TOK_ARROW:
+		return "ARROW";
 	case TOK_COMMA:
 		return "COMMA";
 	case TOK_COLON:
@@ -376,14 +392,18 @@ static TokenKind try_keyword_cast(Lexer *lexer, size_t start) {
 	assert(end > start);
 	size_t tok_len = end - start;
 	const char *tok = lexer->src->data + start;
-	if (compare_span(tok, tok_len, "pub" )) return TOK_KEY_PUB;
-	if (compare_span(tok, tok_len, "fn"  )) return TOK_KEY_FN;
-	if (compare_span(tok, tok_len, "in"  )) return TOK_KEY_IN;
-	if (compare_span(tok, tok_len, "with")) return TOK_KEY_WITH;
-	if (compare_span(tok, tok_len, "mut" )) return TOK_KEY_MUT;
-	if (compare_span(tok, tok_len, "loop")) return TOK_KEY_LOOP;
-	if (compare_span(tok, tok_len, "if"  )) return TOK_KEY_IF;
-	if (compare_span(tok, tok_len, "else")) return TOK_KEY_ELSE;
+	if (compare_span(tok, tok_len, "pub"   )) return TOK_KEY_PUB;
+	if (compare_span(tok, tok_len, "fn"    )) return TOK_KEY_FN;
+	if (compare_span(tok, tok_len, "in"    )) return TOK_KEY_IN;
+	if (compare_span(tok, tok_len, "struct")) return TOK_KEY_STRUCT;
+	if (compare_span(tok, tok_len, "return")) return TOK_KEY_RETURN;
+	if (compare_span(tok, tok_len, "move"  )) return TOK_KEY_MOVE;
+	if (compare_span(tok, tok_len, "with"  )) return TOK_KEY_WITH;
+	if (compare_span(tok, tok_len, "mut"   )) return TOK_KEY_MUT;
+	if (compare_span(tok, tok_len, "loop"  )) return TOK_KEY_LOOP;
+	if (compare_span(tok, tok_len, "if"    )) return TOK_KEY_IF;
+	if (compare_span(tok, tok_len, "else"  )) return TOK_KEY_ELSE;
+	if (compare_span(tok, tok_len, "let"   )) return TOK_KEY_LET;
 	return TOK_IDENTIFIER;
 }
 
@@ -401,6 +421,20 @@ static TokenKind match_sym(Lexer *lexer, char sym, TokenKind match, TokenKind mi
 	if (peek_lexer_ch(lexer, 1) == sym) {
 		lexer->cur++;
 		return match;
+	}
+	return miss;
+}
+
+static TokenKind match_sym2(Lexer *lexer, char sym1, char sym2, TokenKind match1, TokenKind match2,
+                            TokenKind miss)
+{
+	if (peek_lexer_ch(lexer, 1) == sym1) {
+		lexer->cur++;
+		return match1;
+	}
+	if (peek_lexer_ch(lexer, 1) == sym2) {
+		lexer->cur++;
+		return match2;
 	}
 	return miss;
 }
@@ -456,7 +490,7 @@ static LexResult consume_token(Lexer *lexer) {
 		kind = match_sym(lexer, '=', TOK_PLUS_ASSIGN, TOK_PLUS);
 		break;
 	case '-':
-		kind = match_sym(lexer, '=', TOK_MINUS_ASSIGN, TOK_MINUS);
+		kind = match_sym2(lexer, '=', '>', TOK_MINUS_ASSIGN, TOK_ARROW, TOK_MINUS);
 		break;
 	case '%':
 		kind = TOK_PERCENT;
