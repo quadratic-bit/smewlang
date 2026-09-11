@@ -1,8 +1,10 @@
 #ifndef LEX_H
 #define LEX_H
 
-#include <stddef.h>
 #include <smew/buf.h>
+#include <smew/vec.h>
+
+#include <stddef.h>
 
 typedef struct {
 	size_t start;

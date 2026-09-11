@@ -1,9 +1,9 @@
 #ifndef BUF_H
 #define BUF_H
 
-#include <stdio.h>
+#include <smew/vec.h>
 
-#include "vec.h"
+#include <stdio.h>
 
 typedef enum {BUF_OK, BUF_ERR} BufResult;
 

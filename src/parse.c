@@ -1,14 +1,13 @@
-#include "smew/colors.h"
 #include <smew/parse.h>
+
+#include <smew/arena.h>
+#include <smew/colors.h>
+#include <smew/lex.h>
+#include <smew/vec.h>
 
 #include <assert.h>
 #include <stdalign.h>
-#include <stddef.h>
 #include <stdint.h>
-
-#include <smew/arena.h>
-#include <smew/lex.h>
-#include <smew/vec.h>
 #include <stdio.h>
 
 #define parser_alloc_single(parser, node) \

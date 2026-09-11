@@ -1,11 +1,12 @@
-#include "smew/vec.h"
+#include <smew/arena.h>
+#include <smew/buf.h>
+#include <smew/colors.h>
+#include <smew/lex.h>
+#include <smew/parse.h>
+#include <smew/vec.h>
+
 #include <assert.h>
 #include <stdio.h>
-
-#include <smew/buf.h>
-#include <smew/lex.h>
-#include <smew/colors.h>
-#include <smew/parse.h>
 
 int main(int argc, char **argv) {
 	if (argc != 2) {

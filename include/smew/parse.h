@@ -1,8 +1,10 @@
 #ifndef PARSER_H
 #define PARSER_H
 
-#include <smew/lex.h>
 #include <smew/arena.h>
+#include <smew/lex.h>
+#include <smew/vec.h>
+
 #include <stdint.h>
 
 typedef struct {
