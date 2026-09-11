@@ -5,6 +5,7 @@
 #include <smew/buf.h>
 #include <smew/lex.h>
 #include <smew/colors.h>
+#include <smew/parse.h>
 
 int main(int argc, char **argv) {
 	if (argc != 2) {
@@ -64,6 +65,12 @@ int main(int argc, char **argv) {
 		fclose(input_file);
 		return 1;
 	}
+
+	Parser parser = parse(input_filename, lexer.toks.data);
+	print_ast(lexer.src->data, &parser.tree);
+
+	vec_free  (&parser.tree.items);
+	arena_free(&parser.arena);
 
 	lex_free(&lexer);
 	vec_free(&source);
