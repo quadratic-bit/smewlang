@@ -25,6 +25,7 @@ VecResult _vec_grow_impl(void **buf, size_t *cap, size_t elem_size, size_t new_s
 }
 
 
+// TODO: decide on failure semantics (do I reset fields on bad malloc)
 void _vec_init_impl(void **buf, size_t *cap, size_t *len, size_t elem_size, size_t init_cap) {
 	assert(init_cap > 0 && "Initial capacity must not be zero");
 	*cap = init_cap;

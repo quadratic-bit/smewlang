@@ -1,3 +1,5 @@
+#include <smew/lex.h>
+
 #include <smew/buf.h>
 #include <smew/colors.h>
 #include <smew/line.h>
@@ -13,82 +15,7 @@ typedef enum {
 	LEX_ERR_OOM,
 } LexResult;
 
-typedef enum {
-	LEX_DIAG_INVALID_IDENTIFIER,
-	LEX_DIAG_UNKNOWN_CHARACTER,
-	LEX_DIAG_UNCLOSED_STRING_LITERAL
-} LexDiagKind;
-
-typedef struct {
-	size_t start;
-	size_t len;
-} Span;
-
-typedef enum {
-	TOK_UNK,
-
-	TOK_IDENTIFIER,
-
-	TOK_KEY_PUB,
-	TOK_KEY_FN,
-	TOK_KEY_IN,
-	TOK_KEY_WITH,
-	TOK_KEY_MUT,
-	TOK_KEY_LOOP,
-	TOK_KEY_IF,
-	TOK_KEY_ELSE,
-	TOK_KEY_STRUCT,
-	TOK_KEY_RETURN,
-	TOK_KEY_MOVE,
-	TOK_KEY_LET,
-
-	TOK_LITERAL_INT,
-	TOK_LITERAL_STRING,
-
-	TOK_LPAREN,
-	TOK_RPAREN,
-	TOK_LBRACE,
-	TOK_RBRACE,
-	TOK_LBRACKET,
-	TOK_RBRACKET,
-
-	TOK_PLUS,
-	TOK_MINUS,
-	TOK_PERCENT,
-	TOK_SLASH,
-	TOK_STAR,
-	TOK_BANG,
-	TOK_ASSIGN,
-	TOK_PLUS_ASSIGN,
-	TOK_MINUS_ASSIGN,
-
-	TOK_GT,
-	TOK_LT,
-
-	TOK_GE,
-	TOK_LE,
-
-	TOK_EQUAL,
-	TOK_NOT_EQUAL,
-	TOK_AND,
-	TOK_OR,
-
-	TOK_PIPE,
-	TOK_AMP,
-	TOK_HAT,
-
-	TOK_ARROW,
-
-	TOK_COMMA,
-	TOK_COLON,
-	TOK_DOT,
-	TOK_QUESTION,
-	TOK_SEMICOLON,
-
-	TOK_EOF
-} TokenKind;
-
-static const char *token_kind_name(TokenKind kind) {
+const char *token_kind_name(TokenKind kind) {
 	switch (kind) {
 	case TOK_UNK:
 		return "UNKNOWN";
@@ -191,29 +118,7 @@ static const char *token_kind_name(TokenKind kind) {
 	}
 }
 
-typedef struct {
-	Span span;
-	TokenKind kind;
-} Token;
 
-typedef Vec(Token) Tokens;
-
-typedef struct {
-	LexDiagKind kind;
-	Span        span;
-} LexDiag;
-
-typedef Vec(LexDiag) LexDiags;
-
-typedef struct {
-	const char *filename;
-
-	SourceBuffer *src;
-	size_t        cur;
-
-	Tokens   toks;
-	LexDiags diags;
-} Lexer;
 
 // XXX: fails silently
 static void add_diag(Lexer *lexer, LexDiagKind kind, Span span) {
@@ -232,7 +137,7 @@ static const char *diag_message(LexDiag *diag) {
 	}
 }
 
-static void print_diag(Lexer *lexer, LexDiag *diag) {
+void print_diag(Lexer *lexer, LexDiag *diag) {
 	SourceLocation loc = locate_offset(lexer->src->data, diag->span.start);
 	printf("%s:%zu:%zu " CLR_RED "Error: %s" CLR_END "\n",
 		lexer->filename,
@@ -553,7 +458,7 @@ static LexResult consume_token(Lexer *lexer) {
 	return lex_emit(lexer, TOK_UNK, tok_start, lexer->cur);
 }
 
-static Lexer lex(SourceBuffer *buf, const char *filename) {
+Lexer lex(SourceBuffer *buf, const char *filename) {
 	const size_t START_TOKENS_CAP = 128;
 
 	Lexer lexer = {.filename = filename, .src = buf, .cur = 0};
@@ -570,7 +475,7 @@ static Lexer lex(SourceBuffer *buf, const char *filename) {
 	return lexer;
 }
 
-static void lex_free(Lexer *lexer) {
+void lex_free(Lexer *lexer) {
 	vec_free(&lexer->toks);
 	vec_free(&lexer->diags);
 }
