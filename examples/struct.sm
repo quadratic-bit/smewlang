@@ -1,0 +1,9 @@
+struct ScoreTable {
+    backing : Byte  [];
+    records : (Record)[];
+}
+
+struct Record {
+    name  : &Byte[];
+    score :  int32;
+}

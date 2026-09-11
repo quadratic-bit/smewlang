@@ -3,7 +3,7 @@ Smew programming language
 
 I'm making a programming language (⸝⸝╸-╺⸝⸝)
 
-Current syntax view is @ example.sm
+Current syntax can be viewed at [examples/](./examples/).
 
 The language will be imperative, expression-oriented, no exceptions, maybe with effect system
 and context propagation (i pulled the last term straight out of my head).
