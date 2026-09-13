@@ -14,6 +14,9 @@
 #define parser_alloc_one(parser, type) \
 	((type *)arena_alloc(&(parser)->arena, sizeof(type), alignof(type)))
 
+// TODO: tweak
+static const size_t DEFAULT_AST_ITEMS_CAP = 8;
+
 static void consume(Parser *parser, TokenKind expected) {
 	assert(parser->cur->kind == expected && "Unexpected token kind");
 	parser->cur++;
@@ -187,7 +190,7 @@ static AstItem *parse_item(Parser *parser) {
 Parser parse(const char *filename, Token *tokens) {
 	Parser parser = (Parser){.filename = filename, .cur = tokens};
 	arena_init(&parser.arena);
-	vec_init  (&parser.tree.items, 8); // XXX: magic number
+	vec_init  (&parser.tree.items, DEFAULT_AST_ITEMS_CAP);
 
 	while (parser.cur->kind != TOK_EOF) {
 		AstItem *item = parse_item(&parser);
