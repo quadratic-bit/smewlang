@@ -71,6 +71,7 @@ static AstType *consume_type(Parser *parser, uint8_t ambient_bp) {
 		if (cur_tok->kind == TOK_AMP) {
 			assert(base_type == NULL);
 			uint8_t bp = get_type_bp(TOK_AMP).right;
+			const Token *amp_tok = parser->cur;
 			consume(parser, TOK_AMP);
 			cur_tok = parser->cur;
 			AstTypeKind borrow_kind = AST_TYPE_BORROW;
@@ -87,7 +88,7 @@ static AstType *consume_type(Parser *parser, uint8_t ambient_bp) {
 			} else if (borrow_kind == AST_TYPE_BORROW_MUT) {
 				base_type->borrow_mut.inner = operand;
 			} else assert(0);
-			base_type->span = span_span(cur_tok->span, operand->span);
+			base_type->span = span_span(amp_tok->span, operand->span);
 			continue;
 		}
 		if (cur_tok->kind == TOK_IDENTIFIER) {
@@ -126,7 +127,7 @@ static AstType *consume_type(Parser *parser, uint8_t ambient_bp) {
 			AstType *new_base_type = parser_alloc_one(parser, AstType);
 			if (new_base_type == NULL) abort();
 			new_base_type->kind = AST_TYPE_ARRAY_DYN;
-			new_base_type->pointer.inner = base_type;
+			new_base_type->array_dyn.inner = base_type;
 			new_base_type->span = span_span(base_type->span, (cur_tok+1)->span);
 			base_type = new_base_type;
 			continue;
@@ -175,6 +176,7 @@ static AstItem *parse_item(Parser *parser) {
 	const Token *starting_token = parser->cur;
 
 	AstItem *item = parser_alloc_one(parser, AstItem);
+	if (item == NULL) abort();
 
 	switch (starting_token->kind) {
 	case TOK_KEY_STRUCT:
