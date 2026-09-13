@@ -43,6 +43,8 @@ static BindingPower get_type_bp(TokenKind kind) {
 		return (BindingPower){.left = 2, .right = 0};
 	case TOK_LBRACKET:
 		return (BindingPower){.left = 3, .right = 0};
+	default:
+		assert(0 && "Unreachable");
 	}
 }
 
