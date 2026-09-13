@@ -11,8 +11,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+static void *_arena_alloc_raw(Arena *arena, size_t size, size_t align) {
+	void *mem = arena_alloc(arena, size, align);
+	if (mem == NULL) {
+		fprintf(stderr, "fatal: out of memory");
+		exit(EXIT_FAILURE);
+	}
+	return mem;
+}
+
 #define parser_alloc_one(parser, type) \
-	((type *)arena_alloc(&(parser)->arena, sizeof(type), alignof(type)))
+	((type *)_arena_alloc_raw(&(parser)->arena, sizeof(type), alignof(type)))
 
 // TODO: tweak
 static const size_t DEFAULT_AST_ITEMS_CAP = 8;
@@ -25,7 +34,6 @@ static void consume(Parser *parser, TokenKind expected) {
 static AstIdent *consume_ident(Parser *parser) {
 	assert(parser->cur->kind == TOK_IDENTIFIER && "Unexpected token kind");
 	AstIdent *ident = parser_alloc_one(parser, AstIdent);
-	if (ident == NULL) abort(); // TODO: do more graceful exit
 	ident->span = parser->cur->span;
 	parser->cur++;
 	return ident;
@@ -81,7 +89,6 @@ static AstType *consume_type(Parser *parser, uint8_t ambient_bp) {
 			}
 			AstType *operand = consume_type(parser, bp);
 			base_type = parser_alloc_one(parser, AstType);
-			if (base_type == NULL) abort();
 			base_type->kind = borrow_kind;
 			if (borrow_kind == AST_TYPE_BORROW) {
 				base_type->borrow.inner = operand;
@@ -95,7 +102,6 @@ static AstType *consume_type(Parser *parser, uint8_t ambient_bp) {
 			assert(base_type == NULL);
 			AstIdent *ident = consume_ident(parser);
 			base_type = parser_alloc_one(parser, AstType);
-			if (base_type == NULL) abort();
 			base_type->kind = AST_TYPE_NAME;
 			base_type->name.ident = ident;
 			base_type->span = ident->span;
@@ -109,7 +115,6 @@ static AstType *consume_type(Parser *parser, uint8_t ambient_bp) {
 			}
 			consume(parser, TOK_STAR);
 			AstType *new_base_type = parser_alloc_one(parser, AstType);
-			if (new_base_type == NULL) abort();
 			new_base_type->kind = AST_TYPE_POINTER;
 			new_base_type->pointer.inner = base_type;
 			new_base_type->span = span_span(base_type->span, cur_tok->span);
@@ -125,7 +130,6 @@ static AstType *consume_type(Parser *parser, uint8_t ambient_bp) {
 			consume(parser, TOK_LBRACKET);
 			consume(parser, TOK_RBRACKET); // TODO: array_fixed
 			AstType *new_base_type = parser_alloc_one(parser, AstType);
-			if (new_base_type == NULL) abort();
 			new_base_type->kind = AST_TYPE_ARRAY_DYN;
 			new_base_type->array_dyn.inner = base_type;
 			new_base_type->span = span_span(base_type->span, (cur_tok+1)->span);
@@ -142,7 +146,6 @@ static AstStructField *consume_struct_field(Parser *parser) {
 	consume(parser, TOK_COLON);
 	AstType *field_type = consume_type(parser, LOWEST_BP);
 	AstStructField *field = parser_alloc_one(parser, AstStructField);
-	if (field == NULL) abort();
 	field->name = field_name;
 	field->type = field_type;
 	field->span = span_span(field_name->span, field_type->span);
@@ -155,7 +158,6 @@ static AstStruct *parse_def_struct(Parser *parser) {
 	consume(parser, TOK_KEY_STRUCT);
 
 	AstStruct *struct_def = parser_alloc_one(parser, AstStruct);
-	if (struct_def == NULL) abort();
 
 	struct_def->name = consume_ident(parser);
 
@@ -176,7 +178,6 @@ static AstItem *parse_item(Parser *parser) {
 	const Token *starting_token = parser->cur;
 
 	AstItem *item = parser_alloc_one(parser, AstItem);
-	if (item == NULL) abort();
 
 	switch (starting_token->kind) {
 	case TOK_KEY_STRUCT:
