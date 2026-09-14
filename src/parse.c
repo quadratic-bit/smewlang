@@ -32,9 +32,22 @@ static void consume(Parser *parser, TokenKind expected) {
 	parser->cur++;
 }
 
+static int consume_maybe(Parser *parser, TokenKind expected) {
+	if (parser->cur->kind == expected) {
+		parser->cur++;
+		return 1;
+	}
+	return 0;
+}
+
 // XXX: fails silently
 static void add_diag(Parser *parser, ParseDiagKind kind, Span span) {
-	ParseDiag diag = {.kind = kind, .span = span};
+	ParseDiag diag = {.kind = kind, .span = span, .expected = ""};
+	vec_push(&parser->diags, &diag);
+}
+
+static void add_diag_expected(Parser *parser, ParseDiagKind kind, Span span, const char *expect) {
+	ParseDiag diag = {.kind = kind, .span = span, .expected = expect};
 	vec_push(&parser->diags, &diag);
 }
 
@@ -42,11 +55,13 @@ static const char *diag_message(ParseDiag *diag) {
 	switch (diag->kind) {
 	case AST_DIAG_UNEXPECTED_EOF:
 		return "Unexpected EOF";
+	case AST_DIAG_UNEXPECTED_TOKEN:
+		return "Unexpected token";
 	}
 }
 
 void print_ast_diag(Parser *parser, SourceBuffer *src, ParseDiag *diag) {
-	print_diag(parser->filename, src, diag_message(diag), diag->span);
+	print_diag(parser->filename, src, diag->span, diag_message(diag), diag->expected);
 }
 
 static int guard_eof(Parser *parser) {
@@ -60,6 +75,16 @@ static AstIdent *consume_ident(Parser *parser) {
 	AstIdent *ident = parser_alloc_one(parser, AstIdent);
 	ident->span = parser->cur->span;
 	parser->cur++;
+	return ident;
+}
+
+static Span zero_span(void) {
+	return (Span){.start = 0, .len = 0};
+}
+
+static AstIdent *unknown_ident(Parser *parser) {
+	AstIdent *ident = parser_alloc_one(parser, AstIdent);
+	ident->span = zero_span();
 	return ident;
 }
 
@@ -85,6 +110,13 @@ static BindingPower get_type_bp(TokenKind kind) {
 
 static Span span_span(Span left, Span right) {
 	return (Span){.start = left.start, .len = right.start + right.len - left.start};
+}
+
+static AstType *unknown_type(Parser *parser) {
+	AstType *base_type = parser_alloc_one(parser, AstType);
+	base_type->span = zero_span();
+	base_type->kind = AST_TYPE_UNKNOWN;
+	return base_type;
 }
 
 static AstType *consume_type(Parser *parser, uint8_t ambient_bp) {
@@ -165,15 +197,44 @@ static AstType *consume_type(Parser *parser, uint8_t ambient_bp) {
 	return base_type;
 }
 
-static AstStructField *consume_struct_field(Parser *parser) {
-	AstIdent *field_name = consume_ident(parser);
-	consume(parser, TOK_COLON);
-	AstType *field_type = consume_type(parser, LOWEST_BP);
+static void consume_until_semicolon_or_rbrace(Parser *parser) {
+	while (parser->cur->kind != TOK_SEMICOLON &&
+	       parser->cur->kind != TOK_RBRACE    &&
+	       parser->cur->kind != TOK_EOF)
+	{
+		parser->cur++;
+	}
+}
+
+static AstStructField *parse_struct_field(Parser *parser) {
 	AstStructField *field = parser_alloc_one(parser, AstStructField);
+	field->next = NULL;
+
+	if (parser->cur->kind != TOK_IDENTIFIER) {
+		add_diag_expected(parser, AST_DIAG_UNEXPECTED_TOKEN,
+		                  parser->cur->span, "identifier");
+		Span start = parser->cur->span;
+		consume_until_semicolon_or_rbrace(parser);
+		Span end = parser->cur->span;
+		field->name = unknown_ident(parser);
+		field->type = unknown_type(parser);
+		field->span = span_span(start, end);
+		return field;
+	}
+
+	AstIdent *field_name = consume_ident(parser);
+
+	if (parser->cur->kind != TOK_COLON) {
+		add_diag_expected(parser, AST_DIAG_UNEXPECTED_TOKEN, parser->cur->span, "colon");
+		// then assume it's inserted
+	} else {
+		consume(parser, TOK_COLON);
+	}
+
+	AstType *field_type = consume_type(parser, LOWEST_BP);
 	field->name = field_name;
 	field->type = field_type;
 	field->span = span_span(field_name->span, field_type->span);
-	field->next = NULL;
 	return field;
 }
 
@@ -192,8 +253,15 @@ static AstStruct *parse_def_struct(Parser *parser) {
 			struct_def->span = span_span(struct_tok->span, parser->cur->span);
 			return struct_def;
 		}
-		AstStructField *field = consume_struct_field(parser);
-		consume(parser, TOK_SEMICOLON);
+		AstStructField *field = parse_struct_field(parser);
+		if (parser->cur->kind == TOK_SEMICOLON) {
+			consume(parser, TOK_SEMICOLON);
+		} else {
+			add_diag_expected(parser, AST_DIAG_UNEXPECTED_TOKEN,
+			                  parser->cur->span, "semicolon");
+			consume_until_semicolon_or_rbrace(parser);
+			consume_maybe(parser, TOK_SEMICOLON);
+		}
 		*cur = field;
 		cur = &field->next;
 	}
@@ -237,7 +305,11 @@ static void print_tab(size_t depth) {
 }
 
 static void print_ident(const char *src, AstIdent *ident) {
-	printf(CLR_MAGENTA "%.*s" CLR_END, (int)(ident->span.len), src + ident->span.start);
+	if (ident->span.len == 0) {
+		printf(CLR_RED "<UNK>" CLR_END);
+	} else {
+		printf(CLR_MAGENTA "%.*s" CLR_END, (int)(ident->span.len), src + ident->span.start);
+	}
 }
 
 static void print_type(const char *src, AstType *type) {

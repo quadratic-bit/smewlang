@@ -278,6 +278,7 @@ typedef struct {
 
 typedef enum {
 	AST_DIAG_UNEXPECTED_EOF,
+	AST_DIAG_UNEXPECTED_TOKEN
 } ParseDiagKind;
 
 typedef Diag(ParseDiagKind) ParseDiag;

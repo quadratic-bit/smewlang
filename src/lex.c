@@ -122,7 +122,7 @@ const char *token_kind_name(TokenKind kind) {
 
 // XXX: fails silently
 static void add_diag(Lexer *lexer, LexDiagKind kind, Span span) {
-	LexDiag diag = {.kind = kind, .span = span};
+	LexDiag diag = {.kind = kind, .span = span, .expected = ""};
 	vec_push(&lexer->diags, &diag);
 }
 
@@ -138,7 +138,7 @@ static const char *diag_message(LexDiag *diag) {
 }
 
 void print_lex_diag(Lexer *lexer, LexDiag *diag) {
-	print_diag(lexer->filename, lexer->src, diag_message(diag), diag->span);
+	print_diag(lexer->filename, lexer->src, diag->span, diag_message(diag), diag->expected);
 }
 
 static inline int cur_in_range(Lexer *lexer) {

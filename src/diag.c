@@ -2,14 +2,19 @@
 
 #include <smew/colors.h>
 
-void print_diag(const char *filename, const SourceBuffer *src, const char *msg, Span span) {
+void print_diag(const char *filename, const SourceBuffer *src, Span span,
+		const char *msg, const char *expect) {
 	SourceLocation loc = locate_offset(src->data, span.start);
-	printf("%s:%zu:%zu " CLR_RED "Error: %s" CLR_END "\n",
+	printf("%s:%zu:%zu " CLR_RED "Error: %s." CLR_END,
 		filename,
 		loc.line + 1,
 		loc.col  + 1,
 		msg
 	);
+	if (expect[0] != '\0') {
+		printf(" Expected: %s.", expect);
+	}
+	putchar('\n');
 	size_t nl_cur = span.start;
 	size_t left_pad = 0;
 	while (nl_cur > 0 && src->data[nl_cur] != '\n') {
