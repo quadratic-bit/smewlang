@@ -3,6 +3,7 @@
 #include <smew/arena.h>
 #include <smew/colors.h>
 #include <smew/lex.h>
+#include <smew/line.h>
 #include <smew/vec.h>
 
 #include <assert.h>
@@ -29,6 +30,61 @@ static const size_t DEFAULT_AST_ITEMS_CAP = 8;
 static void consume(Parser *parser, TokenKind expected) {
 	assert(parser->cur->kind == expected && "Unexpected token kind");
 	parser->cur++;
+}
+
+// XXX: fails silently
+static void add_diag(Parser *parser, ParseDiagKind kind, Span span) {
+	ParseDiag diag = {.kind = kind, .span = span};
+	vec_push(&parser->diags, &diag);
+}
+
+static const char *diag_message(ParseDiag *diag) {
+	switch (diag->kind) {
+	case AST_DIAG_UNEXPECTED_EOF:
+		return "Unexpected EOF";
+	}
+}
+
+void print_ast_diag(Parser *parser, SourceBuffer *src, ParseDiag *diag) {
+	SourceLocation loc = locate_offset(src->data, diag->span.start);
+	printf("%s:%zu:%zu " CLR_RED "Error: %s" CLR_END "\n",
+		parser->filename,
+		loc.line + 1,
+		loc.col  + 1,
+		diag_message(diag)
+	);
+	size_t nl_cur = diag->span.start;
+	size_t left_pad = 0;
+	while (nl_cur > 0 && src->data[nl_cur] != '\n') {
+		nl_cur--;
+	}
+	if (src->data[nl_cur] == '\n') nl_cur++;
+	for (size_t j = nl_cur; j < diag->span.start; ++j) {
+		putchar(src->data[j]);
+		left_pad++;
+	}
+	printf("%.*s", (int)diag->span.len, src->data + diag->span.start);
+	nl_cur = diag->span.start + diag->span.len;
+	while (nl_cur < src->len && src->data[nl_cur] != '\n') {
+		putchar(src->data[nl_cur]);
+		nl_cur++;
+	}
+	putchar('\n');
+	for (size_t j = 0; j < left_pad; j++) {
+		putchar(' ');
+	}
+	printf(CLR_RED);
+	putchar('^');
+	for (size_t j = 1; j < diag->span.len; ++j) {
+		putchar('~');
+	}
+	puts(CLR_END);
+}
+
+static int guard_eof(Parser *parser) {
+	if (parser->cur->kind != TOK_EOF) return 0;
+	add_diag(parser, AST_DIAG_UNEXPECTED_EOF, parser->cur->span);
+	return 1;
 }
 
 static AstIdent *consume_ident(Parser *parser) {
@@ -164,6 +220,10 @@ static AstStruct *parse_def_struct(Parser *parser) {
 	consume(parser, TOK_LBRACE);
 	AstStructField **cur = &struct_def->fields;
 	while (parser->cur->kind != TOK_RBRACE) {
+		if (guard_eof(parser)) {
+			struct_def->span = span_span(struct_tok->span, parser->cur->span);
+			return struct_def;
+		}
 		AstStructField *field = consume_struct_field(parser);
 		consume(parser, TOK_SEMICOLON);
 		*cur = field;
@@ -194,6 +254,7 @@ Parser parse(const char *filename, Token *tokens) {
 	Parser parser = (Parser){.filename = filename, .cur = tokens};
 	arena_init(&parser.arena);
 	vec_init  (&parser.tree.items, DEFAULT_AST_ITEMS_CAP);
+	vec_init  (&parser.diags, 1);
 
 	while (parser.cur->kind != TOK_EOF) {
 		AstItem *item = parse_item(&parser);

@@ -2,7 +2,7 @@
 
 // DREAM: cluster by graphemes for a better column counting
 // PERF: ergh, can be optimized by prescanning line offsets and doing a binary search
-SourceLocation locate_offset(char *buffer, size_t offset) {
+SourceLocation locate_offset(const char *buffer, size_t offset) {
 	size_t line = 0, line_offset = 0;
 	for (size_t i = 1; i <= offset; ++i) {
 		if (buffer[i - 1] == '\n') {

@@ -70,7 +70,14 @@ int main(int argc, char **argv) {
 	Parser parser = parse(input_filename, lexer.toks.data);
 	print_ast(lexer.src->data, &parser.tree);
 
+	for (size_t i = 0; i < parser.diags.len; ++i) {
+		ParseDiag *diag = &parser.diags.data[i];
+		print_ast_diag(&parser, lexer.src, diag);
+		printf("\n");
+	}
+
 	vec_free  (&parser.tree.items);
+	vec_free  (&parser.diags);
 	arena_free(&parser.arena);
 
 	lex_free(&lexer);

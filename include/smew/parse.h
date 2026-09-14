@@ -275,11 +275,23 @@ typedef struct {
 	Vec(AstItem *) items;
 } Ast;
 
+typedef enum {
+	AST_DIAG_UNEXPECTED_EOF,
+} ParseDiagKind;
+
+typedef struct {
+	ParseDiagKind kind;
+	Span          span;
+} ParseDiag;
+
+typedef Vec(ParseDiag) ParseDiags;
+
 typedef struct {
 	const char  *filename;
 	const Token *cur;
 
 	Ast tree;
+	ParseDiags diags;
 
 	Arena arena;
 } Parser;
@@ -287,5 +299,7 @@ typedef struct {
 Parser parse(const char *filename, Token *tokens);
 
 void print_ast(const char *src, Ast *ast);
+
+void print_ast_diag(Parser *parser, SourceBuffer *src, ParseDiag *diag);
 
 #endif

@@ -9,6 +9,6 @@ typedef struct {
 	size_t col;         // 0-based, in bytes
 } SourceLocation;
 
-SourceLocation locate_offset(char *buffer, size_t offset);
+SourceLocation locate_offset(const char *buffer, size_t offset);
 
 #endif
