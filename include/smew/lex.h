@@ -2,14 +2,11 @@
 #define LEX_H
 
 #include <smew/buf.h>
+#include <smew/diag.h>
+#include <smew/line.h>
 #include <smew/vec.h>
 
 #include <stddef.h>
-
-typedef struct {
-	size_t start;
-	size_t len;
-} Span;
 
 typedef enum {
 	TOK_UNK,
@@ -88,10 +85,7 @@ typedef enum {
 	LEX_DIAG_UNCLOSED_STRING_LITERAL
 } LexDiagKind;
 
-typedef struct {
-	LexDiagKind kind;
-	Span        span;
-} LexDiag;
+typedef Diag(LexDiagKind) LexDiag;
 
 typedef Vec(LexDiag) LexDiags;
 
@@ -111,6 +105,6 @@ void lex_free(Lexer *lexer);
 
 const char *token_kind_name(TokenKind kind);
 
-void print_diag(Lexer *lexer, LexDiag *diag);
+void print_lex_diag(Lexer *lexer, LexDiag *diag);
 
 #endif

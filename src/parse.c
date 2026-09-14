@@ -46,39 +46,7 @@ static const char *diag_message(ParseDiag *diag) {
 }
 
 void print_ast_diag(Parser *parser, SourceBuffer *src, ParseDiag *diag) {
-	SourceLocation loc = locate_offset(src->data, diag->span.start);
-	printf("%s:%zu:%zu " CLR_RED "Error: %s" CLR_END "\n",
-		parser->filename,
-		loc.line + 1,
-		loc.col  + 1,
-		diag_message(diag)
-	);
-	size_t nl_cur = diag->span.start;
-	size_t left_pad = 0;
-	while (nl_cur > 0 && src->data[nl_cur] != '\n') {
-		nl_cur--;
-	}
-	if (src->data[nl_cur] == '\n') nl_cur++;
-	for (size_t j = nl_cur; j < diag->span.start; ++j) {
-		putchar(src->data[j]);
-		left_pad++;
-	}
-	printf("%.*s", (int)diag->span.len, src->data + diag->span.start);
-	nl_cur = diag->span.start + diag->span.len;
-	while (nl_cur < src->len && src->data[nl_cur] != '\n') {
-		putchar(src->data[nl_cur]);
-		nl_cur++;
-	}
-	putchar('\n');
-	for (size_t j = 0; j < left_pad; j++) {
-		putchar(' ');
-	}
-	printf(CLR_RED);
-	putchar('^');
-	for (size_t j = 1; j < diag->span.len; ++j) {
-		putchar('~');
-	}
-	puts(CLR_END);
+	print_diag(parser->filename, src, diag_message(diag), diag->span);
 }
 
 static int guard_eof(Parser *parser) {

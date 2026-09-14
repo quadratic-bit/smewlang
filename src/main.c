@@ -57,7 +57,7 @@ int main(int argc, char **argv) {
 
 	for (size_t i = 0; i < lexer.diags.len; ++i) {
 		LexDiag *diag = &lexer.diags.data[i];
-		print_diag(&lexer, diag);
+		print_lex_diag(&lexer, diag);
 		printf("\n");
 	}
 	if (lexer.diags.len != 0) {

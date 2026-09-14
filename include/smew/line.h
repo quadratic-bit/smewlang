@@ -4,6 +4,11 @@
 #include <stddef.h>
 
 typedef struct {
+	size_t start;
+	size_t len;
+} Span;
+
+typedef struct {
 	size_t line_offset; // 0-based, in bytes
 	size_t line;        // 0-based, in lines
 	size_t col;         // 0-based, in bytes

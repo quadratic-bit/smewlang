@@ -137,40 +137,8 @@ static const char *diag_message(LexDiag *diag) {
 	}
 }
 
-void print_diag(Lexer *lexer, LexDiag *diag) {
-	SourceLocation loc = locate_offset(lexer->src->data, diag->span.start);
-	printf("%s:%zu:%zu " CLR_RED "Error: %s" CLR_END "\n",
-		lexer->filename,
-		loc.line + 1,
-		loc.col  + 1,
-		diag_message(diag)
-	);
-	size_t nl_cur = diag->span.start;
-	size_t left_pad = 0;
-	while (nl_cur > 0 && lexer->src->data[nl_cur] != '\n') {
-		nl_cur--;
-	}
-	if (lexer->src->data[nl_cur] == '\n') nl_cur++;
-	for (size_t j = nl_cur; j < diag->span.start; ++j) {
-		putchar(lexer->src->data[j]);
-		left_pad++;
-	}
-	printf("%.*s", (int)diag->span.len, lexer->src->data + diag->span.start);
-	nl_cur = diag->span.start + diag->span.len;
-	while (nl_cur < lexer->src->len && lexer->src->data[nl_cur] != '\n') {
-		putchar(lexer->src->data[nl_cur]);
-		nl_cur++;
-	}
-	putchar('\n');
-	for (size_t j = 0; j < left_pad; j++) {
-		putchar(' ');
-	}
-	printf(CLR_RED);
-	putchar('^');
-	for (size_t j = 1; j < diag->span.len; ++j) {
-		putchar('~');
-	}
-	puts(CLR_END);
+void print_lex_diag(Lexer *lexer, LexDiag *diag) {
+	print_diag(lexer->filename, lexer->src, diag_message(diag), diag->span);
 }
 
 static inline int cur_in_range(Lexer *lexer) {

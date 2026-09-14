@@ -2,6 +2,7 @@
 #define PARSER_H
 
 #include <smew/arena.h>
+#include <smew/diag.h>
 #include <smew/lex.h>
 #include <smew/vec.h>
 
@@ -279,10 +280,7 @@ typedef enum {
 	AST_DIAG_UNEXPECTED_EOF,
 } ParseDiagKind;
 
-typedef struct {
-	ParseDiagKind kind;
-	Span          span;
-} ParseDiag;
+typedef Diag(ParseDiagKind) ParseDiag;
 
 typedef Vec(ParseDiag) ParseDiags;
 
