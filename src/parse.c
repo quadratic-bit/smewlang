@@ -112,6 +112,17 @@ static Span span_span(Span left, Span right) {
 	return (Span){.start = left.start, .len = right.start + right.len - left.start};
 }
 
+static int consume_or_insert(Parser *parser, TokenKind expect, const char *expect_str) {
+	if (parser->cur->kind != expect) {
+		add_diag_expected(parser, AST_DIAG_UNEXPECTED_TOKEN, parser->cur->span, expect_str);
+		// assume it's inserted
+		return 0;
+	} else {
+		consume(parser, expect);
+		return 1;
+	}
+}
+
 static AstType *unknown_type(Parser *parser) {
 	AstType *base_type = parser_alloc_one(parser, AstType);
 	base_type->span = zero_span();
@@ -126,7 +137,7 @@ static AstType *consume_type_prefix(Parser *parser) {
 	if (cur_tok->kind == TOK_LPAREN) {
 		consume(parser, TOK_LPAREN);
 		AstType *base_type = consume_type(parser, LOWEST_BP);
-		consume(parser, TOK_RPAREN);
+		consume_or_insert(parser, TOK_RPAREN, "closing parenthesis");
 		return base_type;
 	}
 	if (cur_tok->kind == TOK_AMP) {
@@ -236,12 +247,7 @@ static AstStructField *parse_struct_field(Parser *parser) {
 
 	AstIdent *field_name = consume_ident(parser);
 
-	if (parser->cur->kind != TOK_COLON) {
-		add_diag_expected(parser, AST_DIAG_UNEXPECTED_TOKEN, parser->cur->span, "colon");
-		// then assume it's inserted
-	} else {
-		consume(parser, TOK_COLON);
-	}
+	consume_or_insert(parser, TOK_COLON, "colon");
 
 	AstType *field_type = consume_type(parser, LOWEST_BP);
 	field->name = field_name;
