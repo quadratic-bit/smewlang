@@ -40,10 +40,13 @@ static int consume_maybe(Parser *parser, TokenKind expected) {
 	return 0;
 }
 
-// XXX: fails silently
 static void add_diag(Parser *parser, ParseDiagKind kind, Span span) {
 	ParseDiag diag = {.kind = kind, .span = span, .expected = ""};
-	vec_push(&parser->diags, &diag);
+	VecResult res = vec_push(&parser->diags, &diag);
+	if (res != VEC_OK) {
+		fprintf(stderr, "fatal: out of memory");
+		exit(EXIT_FAILURE);
+	}
 }
 
 static void add_diag_expected(Parser *parser, ParseDiagKind kind, Span span, const char *expect) {
@@ -130,13 +133,13 @@ static AstType *unknown_type(Parser *parser) {
 	return base_type;
 }
 
-static AstType *consume_type(Parser *parser, uint8_t ambient_bp);
+static AstType *parse_type(Parser *parser, uint8_t ambient_bp);
 
-static AstType *consume_type_prefix(Parser *parser) {
+static AstType *parse_type_prefix(Parser *parser) {
 	const Token *cur_tok = parser->cur;
 	if (cur_tok->kind == TOK_LPAREN) {
 		consume(parser, TOK_LPAREN);
-		AstType *base_type = consume_type(parser, LOWEST_BP);
+		AstType *base_type = parse_type(parser, LOWEST_BP);
 		consume_or_insert(parser, TOK_RPAREN, "closing parenthesis");
 		return base_type;
 	}
@@ -150,7 +153,7 @@ static AstType *consume_type_prefix(Parser *parser) {
 			borrow_kind = AST_TYPE_BORROW_MUT;
 			consume(parser, TOK_KEY_MUT);
 		}
-		AstType *operand = consume_type(parser, bp);
+		AstType *operand = parse_type(parser, bp);
 		AstType *base_type = parser_alloc_one(parser, AstType);
 		base_type->kind = borrow_kind;
 		if (borrow_kind == AST_TYPE_BORROW) {
@@ -172,7 +175,7 @@ static AstType *consume_type_prefix(Parser *parser) {
 	return NULL;
 }
 
-static AstType *consume_type_postfix(Parser *parser, AstType *base, uint8_t ambient_bp) {
+static AstType *parse_type_postfix(Parser *parser, AstType *base, uint8_t ambient_bp) {
 	const Token *cur_tok = parser->cur;
 	if (cur_tok->kind == TOK_STAR) {
 		uint8_t bp = get_type_bp(TOK_STAR).left;
@@ -202,17 +205,16 @@ static AstType *consume_type_postfix(Parser *parser, AstType *base, uint8_t ambi
 	return NULL;
 }
 
-static AstType *consume_type(Parser *parser, uint8_t ambient_bp) {
-	AstType *base = consume_type_prefix(parser);
+static AstType *parse_type(Parser *parser, uint8_t ambient_bp) {
+	AstType *base = parse_type_prefix(parser);
 
 	if (base == NULL) {
-		add_diag_expected(parser, AST_DIAG_UNEXPECTED_TOKEN,
-		                  parser->cur->span, "type");
+		add_diag_expected(parser, AST_DIAG_UNEXPECTED_TOKEN, parser->cur->span, "type");
 		return unknown_type(parser);
 	}
 
 	while (1) {
-		AstType *new_base = consume_type_postfix(parser, base, ambient_bp);
+		AstType *new_base = parse_type_postfix(parser, base, ambient_bp);
 		if (new_base == NULL) break;
 
 		base = new_base;
@@ -249,11 +251,16 @@ static AstStructField *parse_struct_field(Parser *parser) {
 
 	consume_or_insert(parser, TOK_COLON, "colon");
 
-	AstType *field_type = consume_type(parser, LOWEST_BP);
+	AstType *field_type = parse_type(parser, LOWEST_BP);
 	field->name = field_name;
 	field->type = field_type;
 	field->span = span_span(field_name->span, field_type->span);
 	return field;
+}
+
+// XXX: brittle
+static int is_item_keyword(TokenKind kind) {
+	return kind == TOK_KEY_FN || kind == TOK_KEY_STRUCT;
 }
 
 static AstStruct *parse_def_struct(Parser *parser) {
@@ -262,9 +269,24 @@ static AstStruct *parse_def_struct(Parser *parser) {
 
 	AstStruct *struct_def = parser_alloc_one(parser, AstStruct);
 
-	struct_def->name = consume_ident(parser);
+	if (parser->cur->kind == TOK_IDENTIFIER) {
+		struct_def->name = consume_ident(parser);
+	} else {
+		add_diag_expected(parser, AST_DIAG_UNEXPECTED_TOKEN,
+		                  parser->cur->span, "identifier");
+		while (parser->cur->kind != TOK_LBRACE && !is_item_keyword(parser->cur->kind)) {
+			parser->cur++;
+		}
+		struct_def->name = unknown_ident(parser);
+		if (parser->cur->kind != TOK_LBRACE) {
+			struct_def->span = span_span(struct_tok->span, parser->cur->span);
+			struct_def->fields = NULL;
+			return struct_def;
+		}
+	}
 
 	consume(parser, TOK_LBRACE);
+
 	AstStructField **cur = &struct_def->fields;
 	while (parser->cur->kind != TOK_RBRACE) {
 		if (guard_eof(parser)) {
