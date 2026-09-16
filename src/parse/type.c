@@ -4,7 +4,6 @@
 #include <smew/parse.h>
 
 #include <assert.h>
-#include <stdalign.h>
 
 static BindingPower get_type_bp(TokenKind kind) {
 	switch (kind) {

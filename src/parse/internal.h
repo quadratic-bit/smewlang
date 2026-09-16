@@ -4,6 +4,7 @@
 #include <smew/arena.h>
 #include <smew/parse.h>
 
+#include <stdalign.h>
 #include <stddef.h>
 
 static const uint8_t LOWEST_BP = 0;
@@ -25,6 +26,7 @@ AstIdent *consume_ident    (Parser *parser);
 AstType *unknown_type(Parser *parser);
 
 AstType *parse_type(Parser *parser, uint8_t ambient_bp);
+AstExpr *parse_expr(Parser *parser, uint8_t ambient_bp);
 
 void add_diag_expected(Parser *parser, ParseDiagKind kind, Span span, const char *expect);
 
