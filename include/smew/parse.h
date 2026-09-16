@@ -303,7 +303,6 @@ typedef struct {
 
 Parser parse(const char *filename, Token *tokens);
 
-void print_ast(const char *src, Ast *ast);
 
 void print_ast_diag(Parser *parser, SourceBuffer *src, ParseDiag *diag);
 

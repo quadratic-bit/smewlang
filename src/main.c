@@ -1,4 +1,5 @@
 #include <smew/arena.h>
+#include <smew/ast.h>
 #include <smew/buf.h>
 #include <smew/colors.h>
 #include <smew/lex.h>
