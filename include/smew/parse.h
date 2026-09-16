@@ -19,8 +19,9 @@ typedef Diag(ParseDiagKind) ParseDiag;
 typedef Vec(ParseDiag) ParseDiags;
 
 typedef struct {
-	const char  *filename;
-	const Token *cur;
+	const char   *filename;
+	SourceBuffer *src;
+	const Token  *cur;
 
 	Ast tree;
 	ParseDiags diags;
@@ -28,7 +29,7 @@ typedef struct {
 	Arena arena;
 } Parser;
 
-Parser parse(const char *filename, Token *tokens);
+Parser parse(const char *filename, SourceBuffer *buf, Token *tokens);
 
 void print_ast_diag(Parser *parser, SourceBuffer *src, ParseDiag *diag);
 

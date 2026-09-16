@@ -68,7 +68,7 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 
-	Parser parser = parse(input_filename, lexer.toks.data);
+	Parser parser = parse(input_filename, lexer.src, lexer.toks.data);
 	print_ast(lexer.src->data, &parser.tree);
 
 	putchar('\n');

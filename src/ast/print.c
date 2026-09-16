@@ -97,10 +97,42 @@ static void print_func_param(const char *src, AstFunctionParam *param, size_t de
 	printf("\n");
 }
 
+static void print_literal(AstLiteral *lit) {
+	switch (lit->kind) {
+	case AST_LITERAL_INT:
+		printf(CLR_YELLOW "int(%d)" CLR_END, lit->integer);
+		break;
+	case AST_LITERAL_UNIT:
+		printf(CLR_YELLOW "unit" CLR_END);
+		break;
+	default:
+		// TODO:
+		assert(0 && "Print for this literal type is not implemented");
+	}
+}
+
 static void print_expr(const char *src, AstExpr *expr, size_t depth) {
+	print_tab(depth);
+
 	switch (expr->kind) {
+	case AST_EXPR_UNKNOWN:
+		printf(CLR_RED "<UNK>" CLR_END);
+		printf("\n");
+		break;
+
+	case AST_EXPR_IDENT:
+		printf(CLR_GREEN "IDENTIFIER " CLR_END);
+		print_ident(src, expr->ident);
+		printf("\n");
+		break;
+
+	case AST_EXPR_LITERAL:
+		printf(CLR_GREEN "LITERAL " CLR_END);
+		print_literal(expr->literal);
+		printf("\n");
+		break;
+
 	case AST_EXPR_OP_BINARY:
-		print_tab(depth);
 		printf(CLR_GREEN "BINARY EXPR " CLR_YELLOW "'%s'" CLR_END "\n",
 		       binary_op_str(expr->op_binary->op));
 
@@ -114,19 +146,12 @@ static void print_expr(const char *src, AstExpr *expr, size_t depth) {
 
 		print_expr(src, expr->op_binary->right, depth + 1);
 		break;
-	
+
 	case AST_EXPR_OP_UNARY:
-		print_tab(depth);
 		printf(CLR_GREEN "UNARY EXPR" CLR_END "\n");
 		print_expr(src, expr->op_unary->operand, depth + 1);
 		break;
 
-	case AST_EXPR_IDENT:
-		print_tab(depth);
-		printf(CLR_GREEN "IDENTIFIER " CLR_END);
-		print_ident(src, expr->ident);
-		printf("\n");
-		break;
 	default:
 		// TODO:
 		assert(0 && "Print for this expression type is not implemented");
