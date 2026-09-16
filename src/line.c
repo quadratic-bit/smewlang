@@ -18,3 +18,11 @@ SourceLocation locate_offset(const char *buffer, size_t offset) {
 		.col         = offset - line_offset
 	};
 }
+
+Span span_span(Span left, Span right) {
+	return (Span){.start = left.start, .len = right.start + right.len - left.start};
+}
+
+Span zero_span(void) {
+	return (Span){.start = 0, .len = 0};
+}

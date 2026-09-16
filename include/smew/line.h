@@ -8,6 +8,9 @@ typedef struct {
 	size_t len;
 } Span;
 
+Span span_span(Span left, Span right);
+Span zero_span(void);
+
 typedef struct {
 	size_t line_offset; // 0-based, in bytes
 	size_t line;        // 0-based, in lines

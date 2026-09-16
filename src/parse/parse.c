@@ -1,4 +1,5 @@
 #include <smew/parse.h>
+#include "internal.h"
 
 #include <smew/arena.h>
 #include <smew/colors.h>
@@ -12,7 +13,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static void *_arena_alloc_raw(Arena *arena, size_t size, size_t align) {
+void *arena_alloc_guarded(Arena *arena, size_t size, size_t align) {
 	void *mem = arena_alloc(arena, size, align);
 	if (mem == NULL) {
 		fprintf(stderr, "fatal: out of memory");
@@ -21,14 +22,11 @@ static void *_arena_alloc_raw(Arena *arena, size_t size, size_t align) {
 	return mem;
 }
 
-#define parser_alloc_one(parser, type) \
-	((type *)_arena_alloc_raw(&(parser)->arena, sizeof(type), alignof(type)))
-
 // TODO: tweak
 static const size_t DEFAULT_AST_ITEMS_CAP = 8;
 
-static void consume(Parser *parser, TokenKind expected) {
-	assert(parser->cur->kind == expected && "Unexpected token kind");
+void consume(Parser *parser, TokenKind expect) {
+	assert(parser->cur->kind == expect && "Unexpected token kind");
 	parser->cur++;
 }
 
@@ -49,7 +47,7 @@ static void add_diag(Parser *parser, ParseDiagKind kind, Span span) {
 	}
 }
 
-static void add_diag_expected(Parser *parser, ParseDiagKind kind, Span span, const char *expect) {
+void add_diag_expected(Parser *parser, ParseDiagKind kind, Span span, const char *expect) {
 	ParseDiag diag = {.kind = kind, .span = span, .expected = expect};
 	vec_push(&parser->diags, &diag);
 }
@@ -73,16 +71,12 @@ static int guard_eof(Parser *parser) {
 	return 1;
 }
 
-static AstIdent *consume_ident(Parser *parser) {
+AstIdent *consume_ident(Parser *parser) {
 	assert(parser->cur->kind == TOK_IDENTIFIER && "Unexpected token kind");
 	AstIdent *ident = parser_alloc_one(parser, AstIdent);
 	ident->span = parser->cur->span;
 	parser->cur++;
 	return ident;
-}
-
-static Span zero_span(void) {
-	return (Span){.start = 0, .len = 0};
 }
 
 static AstIdent *unknown_ident(Parser *parser) {
@@ -91,31 +85,7 @@ static AstIdent *unknown_ident(Parser *parser) {
 	return ident;
 }
 
-typedef struct {
-	uint8_t left;
-	uint8_t right;
-} BindingPower;
-
-static const uint8_t LOWEST_BP = 0;
-
-static BindingPower get_type_bp(TokenKind kind) {
-	switch (kind) {
-	case TOK_AMP:
-		return (BindingPower){.left = 0, .right = 1};
-	case TOK_STAR:
-		return (BindingPower){.left = 2, .right = 0};
-	case TOK_LBRACKET:
-		return (BindingPower){.left = 3, .right = 0};
-	default:
-		assert(0 && "Unreachable");
-	}
-}
-
-static Span span_span(Span left, Span right) {
-	return (Span){.start = left.start, .len = right.start + right.len - left.start};
-}
-
-static int consume_or_insert(Parser *parser, TokenKind expect, const char *expect_str) {
+int consume_or_insert(Parser *parser, TokenKind expect, const char *expect_str) {
 	if (parser->cur->kind != expect) {
 		add_diag_expected(parser, AST_DIAG_UNEXPECTED_TOKEN, parser->cur->span, expect_str);
 		// assume it's inserted
@@ -126,107 +96,11 @@ static int consume_or_insert(Parser *parser, TokenKind expect, const char *expec
 	}
 }
 
-static AstType *unknown_type(Parser *parser) {
-	AstType *base_type = parser_alloc_one(parser, AstType);
-	base_type->span = zero_span();
-	base_type->kind = AST_TYPE_UNKNOWN;
-	return base_type;
-}
-
 static AstExpr *unknown_expr(Parser *parser) {
 	AstExpr *base_expr = parser_alloc_one(parser, AstExpr);
 	base_expr->span = zero_span();
 	base_expr->kind = AST_EXPR_UNKNOWN;
 	return base_expr;
-}
-
-static AstType *parse_type(Parser *parser, uint8_t ambient_bp);
-
-static AstType *parse_type_prefix(Parser *parser) {
-	const Token *cur_tok = parser->cur;
-	if (cur_tok->kind == TOK_LPAREN) {
-		consume(parser, TOK_LPAREN);
-		AstType *base_type = parse_type(parser, LOWEST_BP);
-		consume_or_insert(parser, TOK_RPAREN, "closing parenthesis");
-		return base_type;
-	}
-	if (cur_tok->kind == TOK_AMP) {
-		uint8_t bp = get_type_bp(TOK_AMP).right;
-		const Token *amp_tok = parser->cur;
-		consume(parser, TOK_AMP);
-		cur_tok = parser->cur;
-		AstTypeKind borrow_kind = AST_TYPE_BORROW;
-		if (cur_tok->kind == TOK_KEY_MUT) {
-			borrow_kind = AST_TYPE_BORROW_MUT;
-			consume(parser, TOK_KEY_MUT);
-		}
-		AstType *operand = parse_type(parser, bp);
-		AstType *base_type = parser_alloc_one(parser, AstType);
-		base_type->kind = borrow_kind;
-		if (borrow_kind == AST_TYPE_BORROW) {
-			base_type->borrow.inner = operand;
-		} else if (borrow_kind == AST_TYPE_BORROW_MUT) {
-			base_type->borrow_mut.inner = operand;
-		} else assert(0);
-		base_type->span = span_span(amp_tok->span, operand->span);
-		return base_type;
-	}
-	if (cur_tok->kind == TOK_IDENTIFIER) {
-		AstIdent *ident = consume_ident(parser);
-		AstType *base_type = parser_alloc_one(parser, AstType);
-		base_type->kind = AST_TYPE_NAME;
-		base_type->name.ident = ident;
-		base_type->span = ident->span;
-		return base_type;
-	}
-	return NULL;
-}
-
-static AstType *parse_type_postfix(Parser *parser, AstType *base, uint8_t ambient_bp) {
-	const Token *cur_tok = parser->cur;
-	if (cur_tok->kind == TOK_STAR) {
-		uint8_t bp = get_type_bp(TOK_STAR).left;
-		if (bp <= ambient_bp) {
-			return NULL;
-		}
-		consume(parser, TOK_STAR);
-		AstType *new_base = parser_alloc_one(parser, AstType);
-		new_base->kind = AST_TYPE_POINTER;
-		new_base->pointer.inner = base;
-		new_base->span = span_span(base->span, cur_tok->span);
-		return new_base;
-	}
-	if (cur_tok->kind == TOK_LBRACKET) {
-		uint8_t bp = get_type_bp(TOK_LBRACKET).left;
-		if (bp <= ambient_bp) {
-			return NULL;
-		}
-		consume(parser, TOK_LBRACKET);
-		consume(parser, TOK_RBRACKET); // TODO: array_fixed
-		AstType *new_base = parser_alloc_one(parser, AstType);
-		new_base->kind = AST_TYPE_ARRAY_DYN;
-		new_base->array_dyn.inner = base;
-		new_base->span = span_span(base->span, (cur_tok+1)->span);
-		return new_base;
-	}
-	return NULL;
-}
-
-static AstType *parse_type(Parser *parser, uint8_t ambient_bp) {
-	AstType *base = parse_type_prefix(parser);
-
-	if (base == NULL) {
-		add_diag_expected(parser, AST_DIAG_UNEXPECTED_TOKEN, parser->cur->span, "type");
-		return unknown_type(parser);
-	}
-
-	while (1) {
-		AstType *new_base = parse_type_postfix(parser, base, ambient_bp);
-		if (new_base == NULL) break;
-
-		base = new_base;
-	}
-	return base;
 }
 
 static void consume_until_semicolon_or_rbrace(Parser *parser) {

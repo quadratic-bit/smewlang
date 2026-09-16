@@ -14,7 +14,8 @@ CFLAGS := \
 CPPFLAGS := -Iinclude
 
 SRC := $(wildcard src/*.c) \
-       $(wildcard src/ast/*.c)
+       $(wildcard src/ast/*.c) \
+       $(wildcard src/parse/*.c)
 
 
 build/smewc: $(SRC)
