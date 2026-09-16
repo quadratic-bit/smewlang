@@ -71,6 +71,7 @@ typedef struct {
 } AstLoop;
 
 typedef enum {
+	AST_OP_BINARY_SEQ,
 	AST_OP_BINARY_PLUS,
 	AST_OP_BINARY_MINUS,
 	AST_OP_BINARY_DIV,
@@ -176,12 +177,6 @@ typedef struct {
 	Span span;
 } AstBreak;
 
-typedef struct {
-	Span span;
-	AstExpr *left;
-	AstExpr *right;
-} AstSequence;
-
 typedef enum {
 	AST_EXPR_UNKNOWN,
 	AST_EXPR_IF,
@@ -197,7 +192,6 @@ typedef enum {
 	AST_EXPR_BREAK,
 	AST_EXPR_LITERAL,
 	AST_EXPR_IDENT,
-	AST_EXPR_SEQUENCE,
 } AstExprKind;
 
 struct AstExpr {
@@ -218,7 +212,6 @@ struct AstExpr {
 		AstBreak    *brk;
 		AstLiteral  *literal;
 		AstIdent    *ident;
-		AstSequence *seq;
 	};
 };
 

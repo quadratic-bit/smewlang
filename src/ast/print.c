@@ -3,6 +3,24 @@
 
 #include <smew/colors.h>
 
+static const char *binary_op_str(AstOpKindBinary kind) {
+	switch (kind) {
+	case AST_OP_BINARY_SEQ:      return "sequence";
+	case AST_OP_BINARY_ACCESSOR: return "aceess";
+	case AST_OP_BINARY_ASSIGN:   return "=";
+	case AST_OP_BINARY_PLUS:     return "+";
+	case AST_OP_BINARY_MULT:     return "*";
+	case AST_OP_BINARY_DIV:      return "/";
+	case AST_OP_BINARY_MINUS:    return "-";
+	case AST_OP_BINARY_EQ:       return "==";
+	case AST_OP_BINARY_NEQ:      return "!=";
+	case AST_OP_BINARY_GE:       return ">=";
+	case AST_OP_BINARY_GT:       return ">";
+	case AST_OP_BINARY_LE:       return "<=";
+	case AST_OP_BINARY_LT:       return "<";
+	}
+}
+
 static void print_tab(size_t depth) {
 	if (depth > 0) printf("%*s", (int)(depth * 4), "");
 }
@@ -83,15 +101,16 @@ static void print_expr(const char *src, AstExpr *expr, size_t depth) {
 	switch (expr->kind) {
 	case AST_EXPR_OP_BINARY:
 		print_tab(depth);
-		printf(CLR_GREEN "BINARY EXPR" CLR_END "\n");
+		printf(CLR_GREEN "BINARY EXPR " CLR_YELLOW "'%s'" CLR_END "\n",
+		       binary_op_str(expr->op_binary->op));
 
 		print_tab(depth);
-		printf(CLR_GREEN "LEFT" CLR_END "\n");
+		printf(CLR_BLUE "LHS" CLR_END "\n");
 
 		print_expr(src, expr->op_binary->left, depth + 1);
 
 		print_tab(depth);
-		printf(CLR_GREEN "RIGHT" CLR_END "\n");
+		printf(CLR_BLUE "RHS" CLR_END "\n");
 
 		print_expr(src, expr->op_binary->right, depth + 1);
 		break;
@@ -107,13 +126,6 @@ static void print_expr(const char *src, AstExpr *expr, size_t depth) {
 		printf(CLR_GREEN "IDENTIFIER " CLR_END);
 		print_ident(src, expr->ident);
 		printf("\n");
-		break;
-
-	case AST_EXPR_SEQUENCE:
-		print_expr(src, expr->seq->left, depth);
-		if (expr->seq->right != NULL) {
-			print_expr(src, expr->seq->right, depth);
-		}
 		break;
 	default:
 		// TODO:

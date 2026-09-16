@@ -184,18 +184,6 @@ static AstStruct *parse_def_struct(Parser *parser) {
 	return struct_def;
 }
 
-// A synthetic one
-static AstExpr *unit_expr(Parser *parser) {
-	AstExpr    *expr    = parser_alloc_one(parser, AstExpr);
-	AstLiteral *literal = parser_alloc_one(parser, AstLiteral);
-	literal->span = zero_span();
-	literal->kind = AST_LITERAL_UNIT;
-	expr->span    = zero_span();
-	expr->kind    = AST_EXPR_LITERAL;
-	expr->literal = literal;
-	return expr;
-}
-
 static AstBlock *empty_block(Parser *parser) {
 	AstBlock *block = parser_alloc_one(parser, AstBlock);
 	block->span = zero_span();
@@ -220,40 +208,14 @@ static AstFunctionParam *consume_func_params(Parser *parser) {
 	return param;
 }
 
-
-static AstSequence *consume_sequence(Parser *parser);
-
-static AstExpr *consume_sequence_expr(Parser *parser) {
-	AstSequence *seq  = consume_sequence(parser);
-	AstExpr     *expr = unit_expr(parser);
-	expr->kind = AST_EXPR_SEQUENCE;
-	expr->span = seq->span;
-	expr->seq  = seq;
-	return expr;
-}
-
-static AstSequence *consume_sequence(Parser *parser) {
-	AstSequence *seq = parser_alloc_one(parser, AstSequence);
-	seq->left = parse_expr(parser, LOWEST_BP);
-	if (parser->cur->kind == TOK_SEMICOLON) {
-		consume(parser, TOK_SEMICOLON);
-		seq->right = consume_sequence_expr(parser);
-		seq->span = span_span(seq->left->span, seq->right->span);
-		return seq;
-	}
-	seq->right = NULL;
-	seq->span = seq->left->span;
-	return seq;
-}
-
 static AstBlock *consume_block(Parser *parser) {
 	const Token *block_start = parser->cur;
 	AstBlock *block = empty_block(parser);
 
 	consume(parser, TOK_LBRACE);
 
-	AstExpr *seq = consume_sequence_expr(parser);
-	block->body = seq;
+	AstExpr *expr = parse_expr(parser, LOWEST_BP);
+	block->body = expr;
 
 	consume(parser, TOK_RBRACE);
 
