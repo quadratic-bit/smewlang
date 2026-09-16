@@ -75,6 +75,7 @@ typedef struct {
 } AstOpUnary;
 
 typedef enum {
+	AST_LITERAL_UNIT,
 	AST_LITERAL_INT,
 	AST_LITERAL_STRUCT,
 } AstLiterlKind;
@@ -99,6 +100,7 @@ typedef struct {
 	AstLiterlKind kind;
 
 	union {
+		/* Nothing       Unit; */
 		uint32_t         integer;
 		AstStructLiteral struc;
 	};
@@ -151,6 +153,7 @@ typedef struct {
 } AstSequence;
 
 typedef enum {
+	AST_EXPR_UNKNOWN,
 	AST_EXPR_IF,
 	AST_EXPR_LOOP,
 	AST_EXPR_OP_BINARY,
@@ -232,20 +235,23 @@ struct AstBlock {
 	AstExpr *body;
 };
 
-typedef struct {
+typedef struct AstFunctionParam AstFunctionParam;
+
+struct AstFunctionParam {
 	Span      span;
 	AstType  *type;
 	AstIdent *name;
-} AstFunctionParam;
+	AstFunctionParam *next;
+};
 
 typedef struct {
 	Span span;
 	int  is_public;
 
 	AstIdent *name;
-	Vec(AstFunctionParam *) params;
+	AstFunctionParam *params;
 	AstType  *return_type;
-	AstBlock *body;
+	AstBlock *block;
 } AstFunction;
 
 typedef struct AstStructField AstStructField;

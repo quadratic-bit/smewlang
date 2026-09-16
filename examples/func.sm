@@ -1,0 +1,3 @@
+pub fn add(a: int32, b: int32) -> Result {
+    !a + (b? + c) + d + (!s)
+}

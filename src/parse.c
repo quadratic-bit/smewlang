@@ -133,6 +133,13 @@ static AstType *unknown_type(Parser *parser) {
 	return base_type;
 }
 
+static AstExpr *unknown_expr(Parser *parser) {
+	AstExpr *base_expr = parser_alloc_one(parser, AstExpr);
+	base_expr->span = zero_span();
+	base_expr->kind = AST_EXPR_UNKNOWN;
+	return base_expr;
+}
+
 static AstType *parse_type(Parser *parser, uint8_t ambient_bp);
 
 static AstType *parse_type_prefix(Parser *parser) {
@@ -259,8 +266,8 @@ static AstStructField *parse_struct_field(Parser *parser) {
 }
 
 // XXX: brittle
-static int is_item_keyword(TokenKind kind) {
-	return kind == TOK_KEY_FN || kind == TOK_KEY_STRUCT;
+static int is_item_start(TokenKind kind) {
+	return kind == TOK_KEY_FN || kind == TOK_KEY_STRUCT || kind == TOK_KEY_PUB;
 }
 
 static AstStruct *parse_def_struct(Parser *parser) {
@@ -274,7 +281,7 @@ static AstStruct *parse_def_struct(Parser *parser) {
 	} else {
 		add_diag_expected(parser, AST_DIAG_UNEXPECTED_TOKEN,
 		                  parser->cur->span, "identifier");
-		while (parser->cur->kind != TOK_LBRACE && !is_item_keyword(parser->cur->kind)) {
+		while (parser->cur->kind != TOK_LBRACE && !is_item_start(parser->cur->kind)) {
 			parser->cur++;
 		}
 		struct_def->name = unknown_ident(parser);
@@ -310,6 +317,260 @@ static AstStruct *parse_def_struct(Parser *parser) {
 	return struct_def;
 }
 
+// A synthetic one
+static AstExpr *unit_expr(Parser *parser) {
+	AstExpr    *expr    = parser_alloc_one(parser, AstExpr);
+	AstLiteral *literal = parser_alloc_one(parser, AstLiteral);
+	literal->span = zero_span();
+	literal->kind = AST_LITERAL_UNIT;
+	expr->span    = zero_span();
+	expr->kind    = AST_EXPR_LITERAL;
+	expr->literal = literal;
+	return expr;
+}
+
+static AstBlock *empty_block(Parser *parser) {
+	AstBlock *block = parser_alloc_one(parser, AstBlock);
+	block->span = zero_span();
+	block->body = NULL;
+	return block;
+}
+
+static AstFunctionParam *consume_func_params(Parser *parser) {
+	AstFunctionParam *param = parser_alloc_one(parser, AstFunctionParam);
+	param->next = NULL;
+	param->name = consume_ident(parser);
+	consume(parser, TOK_COLON);
+	param->type = parse_type(parser, LOWEST_BP);
+	param->span = span_span(param->name->span, param->type->span);
+
+	if (parser->cur->kind == TOK_COMMA) {
+		consume(parser, TOK_COMMA);
+		AstFunctionParam *next_param = consume_func_params(parser);
+		param->next = next_param;
+	}
+
+	return param;
+}
+
+static uint8_t get_expr_prefix_bp(TokenKind kind) {
+	switch (kind) {
+	case TOK_BANG:
+		return 4;
+	default:
+		return LOWEST_BP;
+	}
+}
+
+static BindingPower get_expr_infix_bp(TokenKind kind) {
+	switch (kind) {
+	case TOK_PLUS:
+		return (BindingPower){.left = 1, .right = 2};
+	case TOK_BANG:
+		return (BindingPower){.left = LOWEST_BP, .right = 4};
+	case TOK_QUESTION:
+		return (BindingPower){.left = 3, .right = LOWEST_BP};
+	default:
+		return (BindingPower){.left = LOWEST_BP, .right = LOWEST_BP};
+	}
+}
+
+static AstExpr *parse_expr(Parser *parser, uint8_t ambient_bp);
+
+static AstOpKindUnary cast_tok_to_prefix(TokenKind kind) {
+	switch (kind) {
+	case TOK_BANG:
+		return AST_OP_UNARY_NOT;
+	default:
+		assert(0 && "Invalid tok -> prefix cast");
+	}
+}
+
+static AstOpKindUnary cast_tok_to_postfix(TokenKind kind) {
+	switch (kind) {
+	case TOK_QUESTION:
+		return AST_OP_UNARY_UNWRAP;
+	default:
+		assert(0 && "Invalid tok -> postfix cast");
+	}
+}
+
+static AstOpKindBinary cast_tok_to_infix(TokenKind kind) {
+	switch (kind) {
+	case TOK_PLUS:
+		return AST_OP_BINARY_PLUS;
+	default:
+		assert(0 && "Invalid tok -> postfix cast");
+	}
+}
+
+static AstExpr *parse_expr_prefix(Parser *parser) {
+	const Token *cur_tok = parser->cur;
+	if (cur_tok->kind == TOK_LPAREN) {
+		consume(parser, TOK_LPAREN);
+		AstExpr *base_expr = parse_expr(parser, LOWEST_BP);
+		consume_or_insert(parser, TOK_RPAREN, "closing parenthesis");
+		return base_expr;
+	}
+	if (cur_tok->kind == TOK_IDENTIFIER) {
+		AstIdent *ident = consume_ident(parser);
+		AstExpr *base_expr = parser_alloc_one(parser, AstExpr);
+		base_expr->kind = AST_EXPR_IDENT;
+		base_expr->ident = ident;
+		base_expr->span = ident->span;
+		return base_expr;
+	}
+	uint8_t bp = get_expr_prefix_bp(cur_tok->kind);
+
+	if (bp == LOWEST_BP) {
+		return NULL;
+	}
+
+	const Token *op = parser->cur;
+	consume(parser, op->kind);
+	AstExpr *operand = parse_expr(parser, bp);
+	AstExpr *base_expr = parser_alloc_one(parser, AstExpr);
+	base_expr->kind = AST_EXPR_OP_UNARY;
+
+	AstOpUnary *unary = parser_alloc_one(parser, AstOpUnary);
+	unary->span = span_span(op->span, operand->span);
+	unary->op = cast_tok_to_prefix(op->kind);
+	unary->operand = operand;
+	base_expr->op_unary = unary;
+	base_expr->span = unary->span; // TODO: remove span duplication
+	return base_expr;
+}
+
+static AstExpr *parse_expr_postfix(Parser *parser, AstExpr *base, uint8_t ambient_bp) {
+	const Token *op = parser->cur;
+	if (op->kind == TOK_RBRACE || op->kind == TOK_EOF) return NULL;
+	BindingPower bp = get_expr_infix_bp(op->kind);
+
+	if (bp.left == LOWEST_BP) return NULL;
+	if (bp.left <= ambient_bp) return NULL;
+
+	consume(parser, op->kind);
+
+	if (bp.right == LOWEST_BP) {
+		// postfix
+		AstExpr *new_base = parser_alloc_one(parser, AstExpr);
+		new_base->kind = AST_EXPR_OP_UNARY;
+
+		AstOpUnary *unary = parser_alloc_one(parser, AstOpUnary);
+		unary->span = span_span(base->span, op->span);
+		unary->op = cast_tok_to_postfix(op->kind);
+		unary->operand = base;
+		new_base->op_unary = unary;
+		new_base->span = unary->span; // TODO: remove span duplication
+		return new_base;
+	}
+	//infix
+	AstExpr *new_base = parser_alloc_one(parser, AstExpr);
+	new_base->kind = AST_EXPR_OP_BINARY;
+
+	AstExpr *operand = parse_expr(parser, bp.right);
+	AstOpBinary *binary = parser_alloc_one(parser, AstOpBinary);
+	binary->span = span_span(base->span, operand->span);
+	binary->op = cast_tok_to_infix(op->kind);
+	binary->left = base;
+	binary->right = operand;
+
+	new_base->op_binary = binary;
+	new_base->span = binary->span;
+	return new_base;
+}
+
+static AstExpr *parse_expr(Parser *parser, uint8_t ambient_bp) {
+	AstExpr *base = parse_expr_prefix(parser);
+
+	if (base == NULL) {
+		add_diag_expected(parser, AST_DIAG_UNEXPECTED_TOKEN,
+		                  parser->cur->span, "expression");
+		return unknown_expr(parser);
+	}
+
+	while (1) {
+		AstExpr *new_base = parse_expr_postfix(parser, base, ambient_bp);
+		if (new_base == NULL) break;
+
+		base = new_base;
+	}
+	return base;
+}
+
+static AstSequence *consume_sequence(Parser *parser);
+
+static AstExpr *consume_sequence_expr(Parser *parser) {
+	AstSequence *seq  = consume_sequence(parser);
+	AstExpr     *expr = unit_expr(parser);
+	expr->kind = AST_EXPR_SEQUENCE;
+	expr->span = seq->span;
+	expr->seq  = seq;
+	return expr;
+}
+
+static AstSequence *consume_sequence(Parser *parser) {
+	AstSequence *seq = parser_alloc_one(parser, AstSequence);
+	seq->left = parse_expr(parser, LOWEST_BP);
+	if (parser->cur->kind == TOK_SEMICOLON) {
+		consume(parser, TOK_SEMICOLON);
+		seq->right = consume_sequence_expr(parser);
+		seq->span = span_span(seq->left->span, seq->right->span);
+		return seq;
+	}
+	seq->right = NULL;
+	seq->span = seq->left->span;
+	return seq;
+}
+
+static AstBlock *consume_block(Parser *parser) {
+	const Token *block_start = parser->cur;
+	AstBlock *block = empty_block(parser);
+
+	consume(parser, TOK_LBRACE);
+
+	AstExpr *seq = consume_sequence_expr(parser);
+	block->body = seq;
+
+	consume(parser, TOK_RBRACE);
+
+	block->span = span_span(block_start->span, parser->cur->span);
+
+	return block;
+}
+
+// TODO: recovery
+static AstFunction *consume_def_func(Parser *parser) {
+	assert((parser->cur->kind == TOK_KEY_PUB ||
+	        parser->cur->kind == TOK_KEY_FN) && "Function must start with `fn` or `pub");
+
+	const Token *start_tok = parser->cur;
+
+	AstFunction *func_def = parser_alloc_one(parser, AstFunction);
+	func_def->params = NULL;
+	func_def->block  = empty_block(parser);
+
+	func_def->is_public = consume_maybe(parser, TOK_KEY_PUB);
+	consume_or_insert(parser, TOK_KEY_FN, "`fn` keyword");
+
+	func_def->name = consume_ident(parser);
+
+	consume(parser, TOK_LPAREN);
+	if (parser->cur->kind != TOK_RPAREN) {
+		func_def->params = consume_func_params(parser);
+	}
+	consume(parser, TOK_RPAREN);
+
+	consume(parser, TOK_ARROW);
+
+	func_def->return_type = parse_type(parser, LOWEST_BP);
+
+	func_def->block = consume_block(parser);
+	func_def->span = span_span(start_tok->span, func_def->block->span);
+
+	return func_def;
+}
+
 static AstItem *parse_item(Parser *parser) {
 	const Token *starting_token = parser->cur;
 
@@ -319,6 +580,13 @@ static AstItem *parse_item(Parser *parser) {
 	case TOK_KEY_STRUCT:
 		item->kind = AST_ITEM_STRUCT;
 		item->struc = parse_def_struct(parser);
+		item->span = item->struc->span;
+		break;
+	case TOK_KEY_PUB:
+	case TOK_KEY_FN:
+		item->kind = AST_ITEM_FUNCTION;
+		item->function = consume_def_func(parser);
+		item->span = item->function->span;
 		break;
 	default:
 		assert(0 && "Unimplemented item");
@@ -406,10 +674,79 @@ static void print_struct(const char *src, AstStruct *struc, size_t depth) {
 	}
 }
 
+static void print_func_param(const char *src, AstFunctionParam *param, size_t depth) {
+	print_tab(depth);
+	printf(CLR_CYAN "|>" CLR_GREEN " PARAM " CLR_END);
+	print_ident(src, param->name);
+	printf(CLR_GREEN " TYPE " CLR_END);
+	print_type(src, param->type);
+	printf("\n");
+}
+
+static void print_expr(const char *src, AstExpr *expr, size_t depth) {
+	switch (expr->kind) {
+	case AST_EXPR_OP_BINARY:
+		print_tab(depth);
+		printf(CLR_GREEN "BINARY EXPR" CLR_END "\n");
+
+		print_tab(depth);
+		printf(CLR_GREEN "LEFT" CLR_END "\n");
+
+		print_expr(src, expr->op_binary->left, depth + 1);
+
+		print_tab(depth);
+		printf(CLR_GREEN "RIGHT" CLR_END "\n");
+
+		print_expr(src, expr->op_binary->right, depth + 1);
+		break;
+	
+	case AST_EXPR_OP_UNARY:
+		print_tab(depth);
+		printf(CLR_GREEN "UNARY EXPR" CLR_END "\n");
+		print_expr(src, expr->op_unary->operand, depth + 1);
+		break;
+
+	case AST_EXPR_IDENT:
+		print_tab(depth);
+		printf(CLR_GREEN "IDENTIFIER " CLR_END);
+		print_ident(src, expr->ident);
+		printf("\n");
+		break;
+
+	case AST_EXPR_SEQUENCE:
+		print_expr(src, expr->seq->left, depth);
+		if (expr->seq->right != NULL) {
+			print_expr(src, expr->seq->right, depth);
+		}
+		break;
+	default:
+		assert(0 && "Unimplemented");
+	}
+}
+
+static void print_func(const char *src, AstFunction *func, size_t depth) {
+	print_tab(depth);
+	if (func->is_public) {
+		printf(CLR_CYAN "PUB " CLR_END);
+	}
+	printf(CLR_GREEN "FUNCTION " CLR_END);
+	print_ident(src, func->name);
+	printf("\n");
+	AstFunctionParam *param = func->params;
+	while (param != NULL) {
+		print_func_param(src, param, depth + 1);
+		param = param->next;
+	}
+	print_tab(depth);
+	printf(CLR_GREEN "BLOCK" CLR_END "\n");
+	print_expr(src, func->block->body, depth + 1);
+}
+
 static void print_item(const char *src, AstItem *item, size_t depth) {
 	switch (item->kind) {
 	case AST_ITEM_FUNCTION:
-		assert(0);
+		print_func(src, item->function, depth);
+		break;
 	case AST_ITEM_STRUCT:
 		print_struct(src, item->struc, depth);
 		break;
