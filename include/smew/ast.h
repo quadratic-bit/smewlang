@@ -6,17 +6,51 @@
 
 #include <stdint.h>
 
+typedef struct AstExpr  AstExpr;
+typedef struct AstType  AstType;
+typedef struct AstBlock AstBlock;
+
 typedef struct {
 	Span span;
 } AstIdent;
 
 typedef enum {
-	AST_ITEM_FUNCTION,
-	AST_ITEM_STRUCT,
-} AstItemKind;
+	AST_TYPE_UNKNOWN,
 
-typedef struct AstExpr  AstExpr;
-typedef struct AstBlock AstBlock;
+	AST_TYPE_NAME,         // T
+
+	AST_TYPE_POINTER,      // T*
+	AST_TYPE_BORROW,       // &T
+	AST_TYPE_BORROW_MUT,   // &mut T
+
+	AST_TYPE_ARRAY_FIXED,  // T[N]
+	AST_TYPE_ARRAY_DYN,    // T[]
+
+	AST_TYPE_GENERIC       // T(A, B)
+} AstTypeKind;
+
+struct AstType {
+	Span span;
+	AstTypeKind kind;
+
+	union {
+		struct { AstIdent *ident; } name;
+		struct { AstType  *inner; } pointer;
+		struct { AstType  *inner; } borrow;
+		struct { AstType  *inner; } borrow_mut;
+		struct { AstType  *inner; } array_dyn;
+
+		struct {
+			AstType *inner;
+			AstExpr *length;
+		} array_fixed;
+
+		struct {
+			AstType        *base;
+			Vec(AstType *)  args;
+		} generic;
+	};
+};
 
 typedef struct AstCondBlock AstCondBlock;
 struct AstCondBlock {
@@ -85,8 +119,6 @@ struct AstLiteralStructField {
 	AstExpr  *value;
 	AstLiteralStructField *next;
 };
-
-typedef struct AstType AstType;
 
 typedef struct {
 	AstType *type;
@@ -190,44 +222,6 @@ struct AstExpr {
 	};
 };
 
-typedef enum {
-	AST_TYPE_UNKNOWN,
-
-	AST_TYPE_NAME,         // T
-
-	AST_TYPE_POINTER,      // T*
-	AST_TYPE_BORROW,       // &T
-	AST_TYPE_BORROW_MUT,   // &mut T
-
-	AST_TYPE_ARRAY_FIXED,  // T[N]
-	AST_TYPE_ARRAY_DYN,    // T[]
-
-	AST_TYPE_GENERIC       // T(A, B)
-} AstTypeKind;
-
-struct AstType {
-	Span span;
-	AstTypeKind kind;
-
-	union {
-		struct { AstIdent *ident; } name;
-		struct { AstType  *inner; } pointer;
-		struct { AstType  *inner; } borrow;
-		struct { AstType  *inner; } borrow_mut;
-		struct { AstType  *inner; } array_dyn;
-
-		struct {
-			AstType *inner;
-			AstExpr *length;
-		} array_fixed;
-
-		struct {
-			AstType        *base;
-			Vec(AstType *)  args;
-		} generic;
-	};
-};
-
 struct AstBlock {
 	Span     span;
 	AstExpr *body;
@@ -265,6 +259,11 @@ typedef struct {
 	AstIdent *name;
 	AstStructField *fields;
 } AstStruct;
+
+typedef enum {
+	AST_ITEM_FUNCTION,
+	AST_ITEM_STRUCT,
+} AstItemKind;
 
 typedef struct {
 	Span span;
