@@ -37,7 +37,7 @@ static int is_infix_bp(BindingPower bp) {
 
 static uint8_t get_expr_prefix_bp(TokenKind kind) {
 	switch (kind) {
-	case TOK_BANG: return 6;
+	case TOK_BANG: return 13;
 	default:
 		return LOWEST_BP;
 	}
@@ -45,9 +45,28 @@ static uint8_t get_expr_prefix_bp(TokenKind kind) {
 
 static BindingPower get_expr_infix_bp(TokenKind kind) {
 	switch (kind) {
-	case TOK_SEMICOLON: return (BindingPower){.left = 1, .right = 2        };
-	case TOK_PLUS:      return (BindingPower){.left = 3, .right = 4        };
-	case TOK_QUESTION:  return (BindingPower){.left = 5, .right = LOWEST_BP};
+	case TOK_SEMICOLON: return (BindingPower){.left = 1,  .right = 2        };
+
+	case TOK_ASSIGN:    return (BindingPower){.left = 4,  .right = 3        };
+
+	case TOK_EQUAL:     return (BindingPower){.left = 5,  .right = 6        };
+	case TOK_NOT_EQUAL: return (BindingPower){.left = 5,  .right = 6        };
+
+	case TOK_GE:        return (BindingPower){.left = 7,  .right = 8        };
+	case TOK_GT:        return (BindingPower){.left = 7,  .right = 8        };
+	case TOK_LE:        return (BindingPower){.left = 7,  .right = 8        };
+	case TOK_LT:        return (BindingPower){.left = 7,  .right = 8        };
+
+	case TOK_PLUS:      return (BindingPower){.left = 9,  .right = 10       };
+	case TOK_MINUS:     return (BindingPower){.left = 9,  .right = 10       };
+
+	case TOK_SLASH:     return (BindingPower){.left = 11, .right = 12       };
+	case TOK_STAR:      return (BindingPower){.left = 11, .right = 12       };
+
+	case TOK_QUESTION:  return (BindingPower){.left = 14, .right = LOWEST_BP};
+
+	case TOK_DOT:       return (BindingPower){.left = 15, .right = 16       };
+
 	default:
 		return (BindingPower){.left = LOWEST_BP, .right = LOWEST_BP};
 	}
@@ -73,8 +92,19 @@ static AstOpKindUnary cast_tok_to_postfix(TokenKind kind) {
 
 static AstOpKindBinary cast_tok_to_infix(TokenKind kind) {
 	switch (kind) {
-	case TOK_PLUS:      return AST_OP_BINARY_PLUS;
 	case TOK_SEMICOLON: return AST_OP_BINARY_SEQ;
+	case TOK_ASSIGN:    return AST_OP_BINARY_ASSIGN;
+	case TOK_EQUAL:     return AST_OP_BINARY_EQ;
+	case TOK_NOT_EQUAL: return AST_OP_BINARY_NEQ;
+	case TOK_GE:        return AST_OP_BINARY_GE;
+	case TOK_GT:        return AST_OP_BINARY_GT;
+	case TOK_LE:        return AST_OP_BINARY_LE;
+	case TOK_LT:        return AST_OP_BINARY_LT;
+	case TOK_PLUS:      return AST_OP_BINARY_PLUS;
+	case TOK_MINUS:     return AST_OP_BINARY_MINUS;
+	case TOK_SLASH:     return AST_OP_BINARY_DIV;
+	case TOK_STAR:      return AST_OP_BINARY_MULT;
+	case TOK_DOT:       return AST_OP_BINARY_ACCESSOR;
 	default:
 		assert(0 && "Invalid infix cast");
 	}

@@ -5,8 +5,8 @@
 
 static const char *binary_op_str(AstOpKindBinary kind) {
 	switch (kind) {
-	case AST_OP_BINARY_SEQ:      return "sequence";
-	case AST_OP_BINARY_ACCESSOR: return "aceess";
+	case AST_OP_BINARY_SEQ:      return ";";
+	case AST_OP_BINARY_ACCESSOR: return ".";
 	case AST_OP_BINARY_ASSIGN:   return "=";
 	case AST_OP_BINARY_PLUS:     return "+";
 	case AST_OP_BINARY_MULT:     return "*";
@@ -18,6 +18,16 @@ static const char *binary_op_str(AstOpKindBinary kind) {
 	case AST_OP_BINARY_GT:       return ">";
 	case AST_OP_BINARY_LE:       return "<=";
 	case AST_OP_BINARY_LT:       return "<";
+	}
+}
+
+static const char *unary_op_str(AstOpKindUnary kind) {
+	switch (kind) {
+	case AST_OP_UNARY_NOT:    return "!";
+	case AST_OP_UNARY_UNWRAP: return "?";
+	case AST_OP_UNARY_BORROW: return "&";
+	case AST_OP_UNARY_DEREF:  return "*";
+	case AST_OP_UNARY_MOVE:   return "move";
 	}
 }
 
@@ -112,43 +122,48 @@ static void print_literal(AstLiteral *lit) {
 }
 
 static void print_expr(const char *src, AstExpr *expr, size_t depth) {
-	print_tab(depth);
-
 	switch (expr->kind) {
 	case AST_EXPR_UNKNOWN:
+		print_tab(depth);
 		printf(CLR_RED "<UNK>" CLR_END);
 		printf("\n");
 		break;
 
 	case AST_EXPR_IDENT:
+		print_tab(depth);
 		printf(CLR_GREEN "IDENTIFIER " CLR_END);
 		print_ident(src, expr->ident);
 		printf("\n");
 		break;
 
 	case AST_EXPR_LITERAL:
+		print_tab(depth);
 		printf(CLR_GREEN "LITERAL " CLR_END);
 		print_literal(expr->literal);
 		printf("\n");
 		break;
 
 	case AST_EXPR_OP_BINARY:
-		printf(CLR_GREEN "BINARY EXPR " CLR_YELLOW "'%s'" CLR_END "\n",
+		if (expr->op_binary->op == AST_OP_BINARY_SEQ) {
+			print_expr(src, expr->op_binary->left,  depth);
+			print_expr(src, expr->op_binary->right, depth);
+			break;
+		}
+		print_tab(depth);
+
+		printf(CLR_GREEN "BINARY " CLR_YELLOW "%s" CLR_END "\n",
 		       binary_op_str(expr->op_binary->op));
 
-		print_tab(depth);
-		printf(CLR_BLUE "LHS" CLR_END "\n");
-
 		print_expr(src, expr->op_binary->left, depth + 1);
-
-		print_tab(depth);
-		printf(CLR_BLUE "RHS" CLR_END "\n");
 
 		print_expr(src, expr->op_binary->right, depth + 1);
 		break;
 
 	case AST_EXPR_OP_UNARY:
-		printf(CLR_GREEN "UNARY EXPR" CLR_END "\n");
+		print_tab(depth);
+		printf(CLR_GREEN "UNARY EXPR " CLR_YELLOW "%s" CLR_END "\n",
+		       unary_op_str(expr->op_unary->op));
+
 		print_expr(src, expr->op_unary->operand, depth + 1);
 		break;
 
@@ -165,6 +180,8 @@ static void print_func(const char *src, AstFunction *func, size_t depth) {
 	}
 	printf(CLR_GREEN "FUNCTION " CLR_END);
 	print_ident(src, func->name);
+	printf(CLR_GREEN " RETURNS " CLR_END);
+	print_type(src, func->return_type);
 	printf("\n");
 	AstFunctionParam *param = func->params;
 	while (param != NULL) {
