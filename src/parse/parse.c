@@ -215,9 +215,21 @@ static AstBlock *consume_block(Parser *parser) {
 	consume(parser, TOK_LBRACE);
 
 	AstExpr *expr = parse_expr(parser, LOWEST_BP);
+
+	while (parser->cur->kind != TOK_RBRACE && parser->cur->kind != TOK_EOF) {
+		// syntactic error -- recover by inserting a semicolon
+
+		add_diag_expected(parser, AST_DIAG_UNEXPECTED_TOKEN, parser->cur->span,
+		                  "semicolon");
+
+		expr = parse_and_sequence(parser, expr);
+	}
+
 	block->body = expr;
 
-	consume(parser, TOK_RBRACE);
+	if (!guard_eof(parser)) {
+		consume(parser, TOK_RBRACE);
+	}
 
 	block->span = span_span(block_start->span, parser->cur->span);
 

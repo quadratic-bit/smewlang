@@ -238,3 +238,20 @@ AstExpr *parse_expr(Parser *parser, uint8_t ambient_bp) {
 	}
 	return base;
 }
+
+AstExpr *parse_and_sequence(Parser *parser, AstExpr *base) {
+	AstExpr     *right = parse_expr(parser, LOWEST_BP);
+	AstOpBinary *seq   = parser_alloc_one(parser, AstOpBinary);
+	seq->op    = AST_OP_BINARY_SEQ;
+	seq->span  = span_span(base->span, right->span);
+	seq->left  = base;
+	seq->right = right;
+
+	AstExpr *new_base = parser_alloc_one(parser, AstExpr);
+	new_base->kind    = AST_EXPR_OP_BINARY;
+
+	new_base->op_binary = seq;
+	new_base->span      = seq->span;
+
+	return new_base;
+}

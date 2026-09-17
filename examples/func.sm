@@ -8,8 +8,8 @@ pub fn add(a: int32, b: int32) -> Result {
     a = b + c * d;
 
     a + b == c * d;
-    a < b + c;
-    a + b >= c - d;
+    a < b + c
+    iforgorsemicolon + b >= c - d;
 
     !a + b;
     !a?;

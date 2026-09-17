@@ -28,6 +28,8 @@ AstType *unknown_type(Parser *parser);
 AstType *parse_type(Parser *parser, uint8_t ambient_bp);
 AstExpr *parse_expr(Parser *parser, uint8_t ambient_bp);
 
+AstExpr *parse_and_sequence(Parser *parser, AstExpr *base);
+
 void add_diag_expected(Parser *parser, ParseDiagKind kind, Span span, const char *expect);
 
 #endif
