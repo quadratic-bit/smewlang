@@ -1,4 +1,3 @@
-#include "diag.h"
 #include "expr.h"
 #include "type.h"
 #include "parse.h"
@@ -127,9 +126,7 @@ AstType *parse_type(Parser *parser, uint8_t min_bp) {
 	AstType *base = parse_type_prefix(parser);
 
 	if (base == NULL) {
-		// XXX: it's not really a concrete token that's unexpected?
-		// it's like we more expected some grammatic structure and found something else
-		add_diag_expected(parser, AST_DIAG_UNEXPECTED_TOKEN, parser->cur->span, "type");
+		add_diag_expected(&parser->diags, parser->cur->span, "Unexpected token", "type");
 		return unknown_type(parser);
 	}
 

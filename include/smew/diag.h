@@ -4,14 +4,18 @@
 #include <smew/buf.h>
 #include <smew/line.h>
 
-#define Diag(Kind) \
-	struct { \
-		Kind kind; \
-		const char *expected; \
-		Span span; \
-	}
+typedef struct {
+	Span span;
+	const char *message;
+	const char *expected;
+} Diag;
 
-void print_diag(const char *filename, const SourceBuffer *src, Span span,
-		const char *msg, const char *expect);
+typedef Vec(Diag) Diags;
+
+void add_diag         (Diags *diags, Span span, const char *message);
+void add_diag_expected(Diags *diags, Span span, const char *message, const char *expected);
+
+// TODO:        v---- unify source file handling :3
+void print_diag(const char *filename, const SourceBuffer *src, Diag *diag);
 
 #endif

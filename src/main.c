@@ -57,8 +57,8 @@ int main(int argc, char **argv) {
 	putchar('\n');
 
 	for (size_t i = 0; i < lexer.diags.len; ++i) {
-		LexDiag *diag = &lexer.diags.data[i];
-		print_lex_diag(&lexer, diag);
+		Diag *diag = &lexer.diags.data[i];
+		print_diag(input_filename, &source, diag);
 		printf("\n");
 	}
 	if (lexer.diags.len != 0) {
@@ -74,8 +74,8 @@ int main(int argc, char **argv) {
 	putchar('\n');
 
 	for (size_t i = 0; i < parser.diags.len; ++i) {
-		ParseDiag *diag = &parser.diags.data[i];
-		print_ast_diag(&parser, lexer.src, diag);
+		Diag *diag = &parser.diags.data[i];
+		print_diag(input_filename, lexer.src, diag);
 		printf("\n");
 	}
 

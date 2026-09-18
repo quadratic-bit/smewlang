@@ -79,24 +79,14 @@ typedef struct {
 
 typedef Vec(Token) Tokens;
 
-typedef enum {
-	LEX_DIAG_INVALID_IDENTIFIER,
-	LEX_DIAG_UNKNOWN_CHARACTER,
-	LEX_DIAG_UNCLOSED_STRING_LITERAL
-} LexDiagKind;
-
-typedef Diag(LexDiagKind) LexDiag;
-
-typedef Vec(LexDiag) LexDiags;
-
 typedef struct {
 	const char *filename;
 
 	SourceBuffer *src;
 	size_t        cur;
 
-	Tokens   toks;
-	LexDiags diags;
+	Tokens toks;
+	Diags  diags;
 } Lexer;
 
 Lexer lex(SourceBuffer *buf, const char *filename);
@@ -104,7 +94,5 @@ Lexer lex(SourceBuffer *buf, const char *filename);
 void lex_free(Lexer *lexer);
 
 const char *token_kind_name(TokenKind kind);
-
-void print_lex_diag(Lexer *lexer, LexDiag *diag);
 
 #endif

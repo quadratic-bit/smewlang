@@ -9,28 +9,16 @@
 
 #include <stdint.h>
 
-typedef enum {
-	AST_DIAG_UNEXPECTED_EOF,
-	AST_DIAG_UNEXPECTED_TOKEN
-} ParseDiagKind;
-
-typedef Diag(ParseDiagKind) ParseDiag;
-
-typedef Vec(ParseDiag) ParseDiags;
-
 typedef struct {
 	const char   *filename;
 	SourceBuffer *src;
 	const Token  *cur;
 
-	Ast tree;
-	ParseDiags diags;
-
+	Ast   tree;
+	Diags diags;
 	Arena arena;
 } Parser;
 
 Parser parse(const char *filename, SourceBuffer *buf, Token *tokens);
-
-void print_ast_diag(Parser *parser, SourceBuffer *src, ParseDiag *diag);
 
 #endif

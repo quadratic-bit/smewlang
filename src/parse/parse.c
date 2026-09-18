@@ -1,12 +1,12 @@
 #include <smew/parse.h>
 
-#include "diag.h"
 #include "expr.h"
 #include "parse.h"
 #include "type.h"
 
 #include <smew/arena.h>
 #include <smew/colors.h>
+#include <smew/diag.h>
 #include <smew/lex.h>
 #include <smew/line.h>
 #include <smew/vec.h>
@@ -30,7 +30,7 @@ void *arena_alloc_guarded(Arena *arena, size_t size, size_t align) {
 static const size_t DEFAULT_AST_ITEMS_CAP = 8;
 
 void consume(Parser *parser, TokenKind expect) {
-	assert(parser->cur->kind == expect && "Unexpected token kind");
+	assert(parser->cur->kind == expect && "Unexpected token");
 	parser->cur++;
 }
 
@@ -44,12 +44,12 @@ static int consume_maybe(Parser *parser, TokenKind expected) {
 
 static int guard_eof(Parser *parser) {
 	if (parser->cur->kind != TOK_EOF) return 0;
-	add_diag(parser, AST_DIAG_UNEXPECTED_EOF, parser->cur->span);
+	add_diag(&parser->diags, parser->cur->span, "Unexpected EOF");
 	return 1;
 }
 
 AstIdent *consume_ident(Parser *parser) {
-	assert(parser->cur->kind == TOK_IDENTIFIER && "Unexpected token kind");
+	assert(parser->cur->kind == TOK_IDENTIFIER && "Unexpected token (expected identifier)");
 	AstIdent *ident = parser_alloc_one(parser, AstIdent);
 	ident->span = parser->cur->span;
 	parser->cur++;
@@ -64,7 +64,8 @@ static AstIdent *unknown_ident(Parser *parser) {
 
 int consume_or_insert(Parser *parser, TokenKind expect, const char *expect_str) {
 	if (parser->cur->kind != expect) {
-		add_diag_expected(parser, AST_DIAG_UNEXPECTED_TOKEN, parser->cur->span, expect_str);
+		add_diag_expected(&parser->diags, parser->cur->span,
+		                  "Unexpected token", expect_str);
 		// assume it's inserted
 		return 0;
 	} else {
@@ -87,8 +88,8 @@ static AstStructField *parse_struct_field(Parser *parser) {
 	field->next = NULL;
 
 	if (parser->cur->kind != TOK_IDENTIFIER) {
-		add_diag_expected(parser, AST_DIAG_UNEXPECTED_TOKEN,
-		                  parser->cur->span, "identifier");
+		add_diag_expected(&parser->diags, parser->cur->span,
+		                  "Unexpected token in struct field", "identifier");
 		Span start = parser->cur->span;
 		consume_until_semicolon_or_rbrace(parser);
 		Span end = parser->cur->span;
@@ -123,8 +124,8 @@ static AstStruct *parse_def_struct(Parser *parser) {
 	if (parser->cur->kind == TOK_IDENTIFIER) {
 		struct_def->name = consume_ident(parser);
 	} else {
-		add_diag_expected(parser, AST_DIAG_UNEXPECTED_TOKEN,
-		                  parser->cur->span, "identifier");
+		add_diag_expected(&parser->diags, parser->cur->span,
+		                  "Unexpected token in struct definition", "identifier");
 		while (parser->cur->kind != TOK_LBRACE && !is_item_start(parser->cur->kind)) {
 			parser->cur++;
 		}
@@ -148,8 +149,8 @@ static AstStruct *parse_def_struct(Parser *parser) {
 		if (parser->cur->kind == TOK_SEMICOLON) {
 			consume(parser, TOK_SEMICOLON);
 		} else {
-			add_diag_expected(parser, AST_DIAG_UNEXPECTED_TOKEN,
-			                  parser->cur->span, "semicolon");
+			add_diag_expected(&parser->diags, parser->cur->span,
+			                  "Unexpected token in struct definition", "semicolon");
 			consume_until_semicolon_or_rbrace(parser);
 			consume_maybe(parser, TOK_SEMICOLON);
 		}
@@ -196,8 +197,8 @@ static AstBlock *consume_block(Parser *parser) {
 	while (parser->cur->kind != TOK_RBRACE && parser->cur->kind != TOK_EOF) {
 		// syntactic error -- recover by inserting a semicolon
 
-		add_diag_expected(parser, AST_DIAG_UNEXPECTED_TOKEN, parser->cur->span,
-		                  "semicolon");
+		add_diag_expected(&parser->diags, parser->cur->span,
+		                  "Unexpected token", "semicolon");
 
 		expr = parse_and_sequence(parser, expr);
 	}

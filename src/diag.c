@@ -1,32 +1,58 @@
 #include <smew/diag.h>
 
 #include <smew/colors.h>
+#include <smew/vec.h>
 
-void print_diag(const char *filename, const SourceBuffer *src, Span span,
-		const char *msg, const char *expect) {
-	SourceLocation loc = locate_offset(src->data, span.start);
+void add_diag(Diags *diags, Span span, const char *message) {
+	Diag diag = (Diag){
+		.span     = span,
+		.message  = message,
+		.expected = NULL
+	};
+	VecResult res = vec_push(diags, &diag);
+	if (res != VEC_OK) {
+		fprintf(stderr, "fatal: out of memory");
+		exit(EXIT_FAILURE);
+	}
+}
+
+void add_diag_expected(Diags *diags, Span span, const char *message, const char *expected) {
+	Diag diag = (Diag){
+		.span     = span,
+		.message  = message,
+		.expected = expected
+	};
+	VecResult res = vec_push(diags, &diag);
+	if (res != VEC_OK) {
+		fprintf(stderr, "fatal: out of memory");
+		exit(EXIT_FAILURE);
+	}
+}
+
+void print_diag(const char *filename, const SourceBuffer *src, Diag *diag) {
+	SourceLocation loc = locate_offset(src->data, diag->span.start);
 	printf("%s:%zu:%zu " CLR_RED "Error: %s." CLR_END,
 		filename,
 		loc.line + 1,
 		loc.col  + 1,
-		msg
+		diag->message
 	);
-	if (expect[0] != '\0') {
-		printf(" Expected: %s.", expect);
+	if (diag->expected != NULL) {
+		printf(" Expected: %s.", diag->expected);
 	}
 	putchar('\n');
-	size_t nl_cur = span.start;
+	size_t nl_cur = diag->span.start;
 	size_t left_pad = 0;
 	while (nl_cur > 0 && src->data[nl_cur] != '\n') {
 		nl_cur--;
 	}
 	if (src->data[nl_cur] == '\n') nl_cur++;
-	for (size_t j = nl_cur; j < span.start; ++j) {
+	for (size_t j = nl_cur; j < diag->span.start; ++j) {
 		putchar(src->data[j]);
 		left_pad++;
 	}
-	printf("%.*s", (int)span.len, src->data + span.start);
-	nl_cur = span.start + span.len;
+	printf("%.*s", (int)diag->span.len, src->data + diag->span.start);
+	nl_cur = diag->span.start + diag->span.len;
 	while (nl_cur < src->len && src->data[nl_cur] != '\n') {
 		putchar(src->data[nl_cur]);
 		nl_cur++;
@@ -37,7 +63,7 @@ void print_diag(const char *filename, const SourceBuffer *src, Span span,
 	}
 	printf(CLR_RED);
 	putchar('^');
-	for (size_t j = 1; j < span.len; ++j) {
+	for (size_t j = 1; j < diag->span.len; ++j) {
 		putchar('~');
 	}
 	puts(CLR_END);

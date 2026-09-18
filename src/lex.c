@@ -2,6 +2,7 @@
 
 #include <smew/buf.h>
 #include <smew/colors.h>
+#include <smew/diag.h>
 #include <smew/line.h>
 #include <smew/vec.h>
 
@@ -118,29 +119,6 @@ const char *token_kind_name(TokenKind kind) {
 	}
 }
 
-
-
-// XXX: fails silently
-static void add_diag(Lexer *lexer, LexDiagKind kind, Span span) {
-	LexDiag diag = {.kind = kind, .span = span, .expected = ""};
-	vec_push(&lexer->diags, &diag);
-}
-
-static const char *diag_message(LexDiag *diag) {
-	switch (diag->kind) {
-	case LEX_DIAG_INVALID_IDENTIFIER:
-		return "Identifier must not start with a digit";
-	case LEX_DIAG_UNKNOWN_CHARACTER:
-		return "Encountered unsupported symbol";
-	case LEX_DIAG_UNCLOSED_STRING_LITERAL:
-		return "Unclosed string literal";
-	}
-}
-
-void print_lex_diag(Lexer *lexer, LexDiag *diag) {
-	print_diag(lexer->filename, lexer->src, diag->span, diag_message(diag), diag->expected);
-}
-
 static inline int cur_in_range(Lexer *lexer) {
 	return lexer->cur < lexer->src->len;
 }
@@ -226,7 +204,8 @@ static LexResult lex_literal_int(Lexer *lexer) {
 	if (cur_in_range(lexer) && is_ident_continue(cur_lexer_ch(lexer))) {
 		// Invalid identifier (starts with digits). Parse the remaining part then recover
 		consume_ident_remaining(lexer);
-		add_diag(lexer, LEX_DIAG_INVALID_IDENTIFIER, span_from(lexer, tok_start));
+		add_diag(&lexer->diags, span_from(lexer, tok_start),
+		         "Identifier must not start with a digit");
 		return lex_emit(lexer, TOK_UNK, tok_start, lexer->cur);
 	}
 
@@ -241,8 +220,7 @@ static LexResult lex_literal_string(Lexer *lexer) {
 	consume_string_body(lexer);
 
 	if (!cur_in_range(lexer) || cur_lexer_ch(lexer) == '\n') {
-		// Unclosed string literal
-		add_diag(lexer, LEX_DIAG_UNCLOSED_STRING_LITERAL, span_from(lexer, tok_start));
+		add_diag(&lexer->diags, span_from(lexer, tok_start), "Unclosed string literal");
 		return lex_emit(lexer, TOK_UNK, tok_start, lexer->cur);
 	}
 	assert(cur_in_range(lexer));
@@ -422,7 +400,7 @@ static LexResult consume_token(Lexer *lexer) {
 	}
 
 	lexer->cur++;
-	add_diag(lexer, LEX_DIAG_UNKNOWN_CHARACTER, span_from(lexer, tok_start));
+	add_diag(&lexer->diags, span_from(lexer, tok_start), "Encountered unsupported symbol");
 	return lex_emit(lexer, TOK_UNK, tok_start, lexer->cur);
 }
 
