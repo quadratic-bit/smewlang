@@ -4,6 +4,6 @@
 #include <smew/parse.h>
 
 AstType *unknown_type(Parser *parser);
-AstType *parse_type  (Parser *parser, uint8_t ambient_bp);
+AstType *parse_type  (Parser *parser, uint8_t min_bp);
 
 #endif

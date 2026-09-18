@@ -8,9 +8,9 @@
 
 static BindingPower get_type_bp(TokenKind kind) {
 	switch (kind) {
-	case TOK_AMP:      return (BindingPower){.left = LOWEST_BP, .right = 1        };
-	case TOK_STAR:     return (BindingPower){.left = 2,         .right = LOWEST_BP};
-	case TOK_LBRACKET: return (BindingPower){.left = 3,         .right = LOWEST_BP};
+	case TOK_AMP:      return (BindingPower){.left = NO_BP, .right = 1    };
+	case TOK_STAR:     return (BindingPower){.left = 2,     .right = NO_BP};
+	case TOK_LBRACKET: return (BindingPower){.left = 3,     .right = NO_BP};
 	default:
 		assert(0 && "Unreachable");
 	}
@@ -28,7 +28,7 @@ static AstType *parse_type_prefix(Parser *parser) {
 
 	if (cur_tok->kind == TOK_LPAREN) {
 		consume(parser, TOK_LPAREN);
-		AstType *base_type = parse_type(parser, LOWEST_BP);
+		AstType *base_type = parse_type(parser, MIN_BP);
 		consume_or_insert(parser, TOK_RPAREN, "closing parenthesis");
 		return base_type;
 	}
@@ -61,50 +61,50 @@ static AstType *parse_type_prefix(Parser *parser) {
 		AstIdent *ident     = consume_ident(parser);
 		AstType  *base_type = parser_alloc_one(parser, AstType);
 
-		base_type->kind = AST_TYPE_NAME;
+		base_type->kind       = AST_TYPE_NAME;
 		base_type->name.ident = ident;
-		base_type->span = ident->span;
+		base_type->span       = ident->span;
 		return base_type;
 	}
 
 	return NULL;
 }
 
-static AstType *parse_type_postfix(Parser *parser, AstType *base, uint8_t ambient_bp) {
+static AstType *parse_type_postfix(Parser *parser, AstType *base, uint8_t min_bp) {
 	const Token *cur_tok = parser->cur;
 
 	if (cur_tok->kind == TOK_STAR) {
 		uint8_t bp = get_type_bp(TOK_STAR).left;
-		if (bp <= ambient_bp) return NULL;
+		if (bp <= min_bp) return NULL;
 
 		consume(parser, TOK_STAR);
 
 		AstType *new_base = parser_alloc_one(parser, AstType);
-		new_base->kind = AST_TYPE_POINTER;
+		new_base->kind          = AST_TYPE_POINTER;
 		new_base->pointer.inner = base;
-		new_base->span = span_span(base->span, cur_tok->span);
+		new_base->span          = span_span(base->span, cur_tok->span);
 		return new_base;
 	}
 
 	if (cur_tok->kind == TOK_LBRACKET) {
 		uint8_t bp = get_type_bp(TOK_LBRACKET).left;
-		if (bp <= ambient_bp) return NULL;
+		if (bp <= min_bp) return NULL;
 
 		consume(parser, TOK_LBRACKET);
 		consume(parser, TOK_RBRACKET); // TODO: array_fixed
 		// TODO: recovery
 
 		AstType *new_base = parser_alloc_one(parser, AstType);
-		new_base->kind = AST_TYPE_ARRAY_DYN;
+		new_base->kind            = AST_TYPE_ARRAY_DYN;
 		new_base->array_dyn.inner = base;
-		new_base->span = span_span(base->span, (cur_tok+1)->span);
+		new_base->span            = span_span(base->span, (cur_tok + 1)->span);
 		return new_base;
 	}
 
 	return NULL;
 }
 
-AstType *parse_type(Parser *parser, uint8_t ambient_bp) {
+AstType *parse_type(Parser *parser, uint8_t min_bp) {
 	AstType *base = parse_type_prefix(parser);
 
 	if (base == NULL) {
@@ -115,7 +115,7 @@ AstType *parse_type(Parser *parser, uint8_t ambient_bp) {
 	}
 
 	while (1) {
-		AstType *new_base = parse_type_postfix(parser, base, ambient_bp);
+		AstType *new_base = parse_type_postfix(parser, base, min_bp);
 		if (new_base == NULL) break;
 
 		base = new_base;

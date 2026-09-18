@@ -7,7 +7,8 @@
 #include <stdalign.h>
 #include <stddef.h>
 
-static const uint8_t LOWEST_BP = 0;
+static const uint8_t MIN_BP = 0;
+static const uint8_t NO_BP  = MIN_BP;
 
 typedef struct {
 	uint8_t left;

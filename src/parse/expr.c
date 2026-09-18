@@ -28,48 +28,52 @@ static AstLiteral *consume_literal_int(Parser *parser) {
 	return lit;
 }
 
-static int is_prefix_bp(uint8_t bp) {
-	return bp != LOWEST_BP;
+static int is_prefix_op(uint8_t bp) {
+	return bp != NO_BP;
 }
 
-static int is_infix_bp(BindingPower bp) {
-	return bp.left != LOWEST_BP || bp.right != LOWEST_BP;
+static int is_postfix_op(BindingPower bp) {
+	return bp.left != NO_BP && bp.right == NO_BP;
+}
+
+static int is_infix_op(BindingPower bp) {
+	return bp.left != NO_BP || bp.right != NO_BP;
 }
 
 static uint8_t get_expr_prefix_bp(TokenKind kind) {
 	switch (kind) {
 	case TOK_BANG: return 13;
 	default:
-		return LOWEST_BP;
+		return NO_BP;
 	}
 }
 
 static BindingPower get_expr_infix_bp(TokenKind kind) {
 	switch (kind) {
-	case TOK_SEMICOLON: return (BindingPower){.left = 1,  .right = 2        };
+	case TOK_SEMICOLON: return (BindingPower){.left = 1,  .right = 2    };
 
-	case TOK_ASSIGN:    return (BindingPower){.left = 4,  .right = 3        };
+	case TOK_ASSIGN:    return (BindingPower){.left = 4,  .right = 3    };
 
-	case TOK_EQUAL:     return (BindingPower){.left = 5,  .right = 6        };
-	case TOK_NOT_EQUAL: return (BindingPower){.left = 5,  .right = 6        };
+	case TOK_EQUAL:     return (BindingPower){.left = 5,  .right = 6    };
+	case TOK_NOT_EQUAL: return (BindingPower){.left = 5,  .right = 6    };
 
-	case TOK_GE:        return (BindingPower){.left = 7,  .right = 8        };
-	case TOK_GT:        return (BindingPower){.left = 7,  .right = 8        };
-	case TOK_LE:        return (BindingPower){.left = 7,  .right = 8        };
-	case TOK_LT:        return (BindingPower){.left = 7,  .right = 8        };
+	case TOK_GE:        return (BindingPower){.left = 7,  .right = 8    };
+	case TOK_GT:        return (BindingPower){.left = 7,  .right = 8    };
+	case TOK_LE:        return (BindingPower){.left = 7,  .right = 8    };
+	case TOK_LT:        return (BindingPower){.left = 7,  .right = 8    };
 
-	case TOK_PLUS:      return (BindingPower){.left = 9,  .right = 10       };
-	case TOK_MINUS:     return (BindingPower){.left = 9,  .right = 10       };
+	case TOK_PLUS:      return (BindingPower){.left = 9,  .right = 10   };
+	case TOK_MINUS:     return (BindingPower){.left = 9,  .right = 10   };
 
-	case TOK_SLASH:     return (BindingPower){.left = 11, .right = 12       };
-	case TOK_STAR:      return (BindingPower){.left = 11, .right = 12       };
+	case TOK_SLASH:     return (BindingPower){.left = 11, .right = 12   };
+	case TOK_STAR:      return (BindingPower){.left = 11, .right = 12   };
 
-	case TOK_QUESTION:  return (BindingPower){.left = 14, .right = LOWEST_BP};
+	case TOK_QUESTION:  return (BindingPower){.left = 14, .right = NO_BP};
 
-	case TOK_DOT:       return (BindingPower){.left = 15, .right = 16       };
+	case TOK_DOT:       return (BindingPower){.left = 15, .right = 16   };
 
 	default:
-		return (BindingPower){.left = LOWEST_BP, .right = LOWEST_BP};
+		return (BindingPower){.left = NO_BP, .right = NO_BP};
 	}
 }
 
@@ -130,7 +134,7 @@ static AstExpr *parse_expr_prefix(Parser *parser) {
 
 	if (cur_tok->kind == TOK_LPAREN) {
 		consume(parser, TOK_LPAREN);
-		AstExpr *base_expr = parse_expr(parser, LOWEST_BP);
+		AstExpr *base_expr = parse_expr(parser, MIN_BP);
 		consume_or_insert(parser, TOK_RPAREN, "closing parenthesis");
 		return base_expr;
 	}
@@ -159,7 +163,7 @@ static AstExpr *parse_expr_prefix(Parser *parser) {
 
 	uint8_t bp = get_expr_prefix_bp(cur_tok->kind);
 
-	if (!is_prefix_bp(bp)) {
+	if (!is_prefix_op(bp)) {
 		return NULL;
 	}
 
@@ -182,16 +186,16 @@ static AstExpr *parse_expr_prefix(Parser *parser) {
 	return base_expr;
 }
 
-static AstExpr *parse_expr_infix(Parser *parser, AstExpr *base, uint8_t ambient_bp) {
+static AstExpr *parse_expr_infix(Parser *parser, AstExpr *base, uint8_t min_bp) {
 	const Token *op = parser->cur;
 	BindingPower bp = get_expr_infix_bp(op->kind);
 
-	if (!is_infix_bp(bp))      return NULL;
-	if (bp.left <= ambient_bp) return NULL;
+	if (!is_infix_op(bp))  return NULL;
+	if (bp.left <= min_bp) return NULL;
 
 	consume(parser, op->kind);
 
-	if (bp.right == LOWEST_BP) {  // postfix
+	if (is_postfix_op(bp)) {
 		AstExpr *new_base = parser_alloc_one(parser, AstExpr);
 		new_base->kind    = AST_EXPR_OP_UNARY;
 
@@ -206,7 +210,6 @@ static AstExpr *parse_expr_infix(Parser *parser, AstExpr *base, uint8_t ambient_
 		return new_base;
 	}
 
-	// infix
 	AstExpr *new_base = parser_alloc_one(parser, AstExpr);
 	new_base->kind    = AST_EXPR_OP_BINARY;
 
@@ -224,7 +227,7 @@ static AstExpr *parse_expr_infix(Parser *parser, AstExpr *base, uint8_t ambient_
 	return new_base;
 }
 
-AstExpr *parse_expr(Parser *parser, uint8_t ambient_bp) {
+AstExpr *parse_expr(Parser *parser, uint8_t min_bp) {
 	AstExpr *base = parse_expr_prefix(parser);
 
 	if (base == NULL) {
@@ -232,7 +235,7 @@ AstExpr *parse_expr(Parser *parser, uint8_t ambient_bp) {
 	}
 
 	while (1) {
-		AstExpr *new_base = parse_expr_infix(parser, base, ambient_bp);
+		AstExpr *new_base = parse_expr_infix(parser, base, min_bp);
 		if (new_base == NULL) break;
 
 		base = new_base;
@@ -241,7 +244,7 @@ AstExpr *parse_expr(Parser *parser, uint8_t ambient_bp) {
 }
 
 AstExpr *parse_and_sequence(Parser *parser, AstExpr *base) {
-	AstExpr     *right = parse_expr(parser, LOWEST_BP);
+	AstExpr     *right = parse_expr(parser, MIN_BP);
 	AstOpBinary *seq   = parser_alloc_one(parser, AstOpBinary);
 	seq->op    = AST_OP_BINARY_SEQ;
 	seq->span  = span_span(base->span, right->span);

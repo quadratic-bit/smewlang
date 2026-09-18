@@ -128,7 +128,7 @@ static AstStructField *parse_struct_field(Parser *parser) {
 
 	consume_or_insert(parser, TOK_COLON, "colon");
 
-	AstType *field_type = parse_type(parser, LOWEST_BP);
+	AstType *field_type = parse_type(parser, MIN_BP);
 	field->name = field_name;
 	field->type = field_type;
 	field->span = span_span(field_name->span, field_type->span);
@@ -199,7 +199,7 @@ static AstFunctionParam *consume_func_params(Parser *parser) {
 	param->next = NULL;
 	param->name = consume_ident(parser);
 	consume(parser, TOK_COLON);
-	param->type = parse_type(parser, LOWEST_BP);
+	param->type = parse_type(parser, MIN_BP);
 	param->span = span_span(param->name->span, param->type->span);
 
 	if (parser->cur->kind == TOK_COMMA) {
@@ -217,7 +217,7 @@ static AstBlock *consume_block(Parser *parser) {
 
 	consume(parser, TOK_LBRACE);
 
-	AstExpr *expr = parse_expr(parser, LOWEST_BP);
+	AstExpr *expr = parse_expr(parser, MIN_BP);
 
 	while (parser->cur->kind != TOK_RBRACE && parser->cur->kind != TOK_EOF) {
 		// syntactic error -- recover by inserting a semicolon
@@ -263,7 +263,7 @@ static AstFunction *consume_def_func(Parser *parser) {
 
 	consume(parser, TOK_ARROW);
 
-	func_def->return_type = parse_type(parser, LOWEST_BP);
+	func_def->return_type = parse_type(parser, MIN_BP);
 
 	func_def->block = consume_block(parser);
 	func_def->span = span_span(start_tok->span, func_def->block->span);
