@@ -5,17 +5,15 @@
 #include <stdlib.h>
 #include <string.h>
 
-VecResult _vec_grow_impl(void **buf, size_t *cap, size_t elem_size, size_t new_size) {
+VecResult vec_grow_impl(void **buf, size_t *cap, size_t elem_size, size_t new_size) {
 	assert(*cap < new_size && "Cannot grow a buffer to a smaller size");
 
 	if (new_size > SIZE_MAX / elem_size) {
-		fputs("Cannot grow vector (requested new_size is too big).\n", stderr);
 		return VEC_ERR;
 	}
 
 	void *new_data = realloc(*buf, new_size * elem_size);
 	if (!new_data) {
-		perror("vec_grow@realloc");
 		return VEC_ERR;
 	}
 
@@ -24,20 +22,27 @@ VecResult _vec_grow_impl(void **buf, size_t *cap, size_t elem_size, size_t new_s
 	return VEC_OK;
 }
 
-
-// TODO: decide on failure semantics (do I reset fields on bad malloc)
-void _vec_init_impl(void **buf, size_t *cap, size_t *len, size_t elem_size, size_t init_cap) {
+VecResult vec_init_impl(void **buf, size_t *cap, size_t *len, size_t elem_size, size_t init_cap) {
 	assert(init_cap > 0 && "Initial capacity must not be zero");
+	assert(*buf == NULL && *cap == 0 && *len == 0 && "Vector must be in the empty state");
+
+	if (init_cap > SIZE_MAX / elem_size) {
+		return VEC_ERR;
+	}
+
+	void *data = malloc(init_cap * elem_size);
+	if (data == NULL) {
+		return VEC_ERR;
+	}
+
+	*buf = data;
 	*cap = init_cap;
 	*len = 0;
-	*buf = malloc(init_cap * elem_size);
-	if (!*buf) {
-		perror("buf_init@malloc");
-		*cap = 0;
-	}
+
+	return VEC_OK;
 }
 
-VecResult _vec_push_impl(void **buf, size_t *cap, size_t *len, size_t elem_size, void *elem) {
+VecResult vec_push_impl(void **buf, size_t *cap, size_t *len, size_t elem_size, const void *elem) {
 	assert(*len <= *cap);
 
 	if (*len == *cap) {
@@ -47,13 +52,12 @@ VecResult _vec_push_impl(void **buf, size_t *cap, size_t *len, size_t elem_size,
 			new_cap = 1;
 		} else {
 			if (*cap > SIZE_MAX / 2) {
-				fputs("Cannot push to vector (too big).\n", stderr);
 				return VEC_ERR;
 			}
 			new_cap = *cap * 2;
 		}
 
-		VecResult grow_ret = _vec_grow_impl(buf, cap, elem_size, new_cap);
+		VecResult grow_ret = vec_grow_impl(buf, cap, elem_size, new_cap);
 		if (grow_ret != VEC_OK) return grow_ret;
 	}
 
