@@ -1,4 +1,5 @@
-#include "internal.h"
+#include "expr.h"
+#include "parse.h"
 
 #include <smew/parse.h>
 #include <smew/ast.h>

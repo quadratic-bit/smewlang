@@ -23,13 +23,6 @@ void      consume          (Parser *parser, TokenKind expect);
 int       consume_or_insert(Parser *parser, TokenKind expect, const char *expect_str);
 AstIdent *consume_ident    (Parser *parser);
 
-AstType *unknown_type(Parser *parser);
-
-AstType *parse_type(Parser *parser, uint8_t ambient_bp);
-AstExpr *parse_expr(Parser *parser, uint8_t ambient_bp);
-
-AstExpr *parse_and_sequence(Parser *parser, AstExpr *base);
-
 void add_diag_expected(Parser *parser, ParseDiagKind kind, Span span, const char *expect);
 
 #endif

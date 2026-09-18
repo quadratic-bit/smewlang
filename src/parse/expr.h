@@ -1,0 +1,9 @@
+#ifndef PARSE_EXPR_H
+#define PARSE_EXPR_H
+
+#include <smew/parse.h>
+
+AstExpr *parse_expr        (Parser *parser, uint8_t ambient_bp);
+AstExpr *parse_and_sequence(Parser *parser, AstExpr *base);
+
+#endif

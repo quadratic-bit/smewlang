@@ -1,5 +1,8 @@
 #include <smew/parse.h>
-#include "internal.h"
+
+#include "expr.h"
+#include "parse.h"
+#include "type.h"
 
 #include <smew/arena.h>
 #include <smew/colors.h>
