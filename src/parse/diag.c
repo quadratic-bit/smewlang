@@ -1,7 +1,7 @@
 #include "diag.h"
 
-void add_diag(Parser *parser, ParseDiagKind kind, Span span) {
-	ParseDiag diag = {.kind = kind, .span = span, .expected = ""};
+void add_diag_expected(Parser *parser, ParseDiagKind kind, Span span, const char *expect) {
+	ParseDiag diag = {.kind = kind, .span = span, .expected = expect};
 	VecResult res = vec_push(&parser->diags, &diag);
 	if (res != VEC_OK) {
 		fprintf(stderr, "fatal: out of memory");
@@ -9,9 +9,8 @@ void add_diag(Parser *parser, ParseDiagKind kind, Span span) {
 	}
 }
 
-void add_diag_expected(Parser *parser, ParseDiagKind kind, Span span, const char *expect) {
-	ParseDiag diag = {.kind = kind, .span = span, .expected = expect};
-	vec_push(&parser->diags, &diag);
+void add_diag(Parser *parser, ParseDiagKind kind, Span span) {
+	add_diag_expected(parser, kind, span, "");
 }
 
 static const char *diag_message(ParseDiag *diag) {
