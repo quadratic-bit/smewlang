@@ -272,6 +272,6 @@ typedef struct {
 	Vec(AstItem *) items;
 } Ast;
 
-void print_ast(const char *src, Ast *ast);
+void print_ast(const char *src, const Ast *ast);
 
 #endif

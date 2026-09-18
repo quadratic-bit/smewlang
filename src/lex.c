@@ -17,108 +17,59 @@ typedef enum {
 
 const char *token_kind_name(TokenKind kind) {
 	switch (kind) {
-	case TOK_UNK:
-		return "UNKNOWN";
-	case TOK_IDENTIFIER:
-		return "IDENTIFIER";
-	case TOK_LITERAL_INT:
-		return "LITERAL:INT";
-	case TOK_LITERAL_STRING:
-		return "LITERAL:STRING";
-	case TOK_KEY_PUB:
-		return "KEYWORD:PUB";
-	case TOK_KEY_FN:
-		return "KEYWORD:FN";
-	case TOK_KEY_IN:
-		return "KEYWORD:IN";
-	case TOK_KEY_WITH:
-		return "KEYWORD:WITH";
-	case TOK_KEY_MUT:
-		return "KEYWORD:MUT";
-	case TOK_KEY_LOOP:
-		return "KEYWORD:LOOP";
-	case TOK_KEY_IF:
-		return "KEYWORD:IF";
-	case TOK_KEY_ELSE:
-		return "KEYWORD:ELSE";
-	case TOK_KEY_STRUCT:
-		return "KEYWORD:STRUCT";
-	case TOK_KEY_RETURN:
-		return "KEYWORD:RETURN";
-	case TOK_KEY_MOVE:
-		return "KEYWORD:MOVE";
-	case TOK_KEY_LET:
-		return "KEYWORD:LET";
-	case TOK_LPAREN:
-		return "PAREN:L";
-	case TOK_RPAREN:
-		return "PAREN:R";
-	case TOK_LBRACKET:
-		return "BRACKET:L";
-	case TOK_RBRACKET:
-		return "BRACKET:R";
-	case TOK_LBRACE:
-		return "BRACE:L";
-	case TOK_RBRACE:
-		return "BRACE:R";
-	case TOK_ASSIGN:
-		return "ASSIGN";
-	case TOK_PLUS:
-		return "PLUS";
-	case TOK_MINUS:
-		return "MINUS";
-	case TOK_PERCENT:
-		return "PERCENT";
-	case TOK_SLASH:
-		return "SLASH";
-	case TOK_STAR:
-		return "STAR";
-	case TOK_BANG:
-		return "BANG";
-	case TOK_PLUS_ASSIGN:
-		return "ASSIGN:PLUS";
-	case TOK_MINUS_ASSIGN:
-		return "ASSIGN:MINUS";
-	case TOK_EQUAL:
-		return "EQUAL";
-	case TOK_NOT_EQUAL:
-		return "EQUAL:NOT";
-	case TOK_GT:
-		return "GT";
-	case TOK_LT:
-		return "LT";
-	case TOK_GE:
-		return "GE";
-	case TOK_LE:
-		return "LE";
-	case TOK_AND:
-		return "AND";
-	case TOK_OR:
-		return "OR";
-	case TOK_PIPE:
-		return "PIPE";
-	case TOK_AMP:
-		return "AMP";
-	case TOK_HAT:
-		return "HAT";
-	case TOK_ARROW:
-		return "ARROW";
-	case TOK_COMMA:
-		return "COMMA";
-	case TOK_COLON:
-		return "COLON";
-	case TOK_DOT:
-		return "DOT";
-	case TOK_QUESTION:
-		return "QUESTION";
-	case TOK_SEMICOLON:
-		return "SEMICOLON";
-	case TOK_EOF:
-		return "EOF";
+	case TOK_UNK:            return "UNKNOWN";
+	case TOK_IDENTIFIER:     return "IDENTIFIER";
+	case TOK_LITERAL_INT:    return "LITERAL:INT";
+	case TOK_LITERAL_STRING: return "LITERAL:STRING";
+	case TOK_KEY_PUB:        return "KEYWORD:PUB";
+	case TOK_KEY_FN:         return "KEYWORD:FN";
+	case TOK_KEY_IN:         return "KEYWORD:IN";
+	case TOK_KEY_WITH:       return "KEYWORD:WITH";
+	case TOK_KEY_MUT:        return "KEYWORD:MUT";
+	case TOK_KEY_LOOP:       return "KEYWORD:LOOP";
+	case TOK_KEY_IF:         return "KEYWORD:IF";
+	case TOK_KEY_ELSE:       return "KEYWORD:ELSE";
+	case TOK_KEY_STRUCT:     return "KEYWORD:STRUCT";
+	case TOK_KEY_RETURN:     return "KEYWORD:RETURN";
+	case TOK_KEY_MOVE:       return "KEYWORD:MOVE";
+	case TOK_KEY_LET:        return "KEYWORD:LET";
+	case TOK_LPAREN:         return "PAREN:L";
+	case TOK_RPAREN:         return "PAREN:R";
+	case TOK_LBRACKET:       return "BRACKET:L";
+	case TOK_RBRACKET:       return "BRACKET:R";
+	case TOK_LBRACE:         return "BRACE:L";
+	case TOK_RBRACE:         return "BRACE:R";
+	case TOK_ASSIGN:         return "ASSIGN";
+	case TOK_PLUS:           return "PLUS";
+	case TOK_MINUS:          return "MINUS";
+	case TOK_PERCENT:        return "PERCENT";
+	case TOK_SLASH:          return "SLASH";
+	case TOK_STAR:           return "STAR";
+	case TOK_BANG:           return "BANG";
+	case TOK_PLUS_ASSIGN:    return "ASSIGN:PLUS";
+	case TOK_MINUS_ASSIGN:   return "ASSIGN:MINUS";
+	case TOK_EQUAL:          return "EQUAL";
+	case TOK_NOT_EQUAL:      return "EQUAL:NOT";
+	case TOK_GT:             return "GT";
+	case TOK_LT:             return "LT";
+	case TOK_GE:             return "GE";
+	case TOK_LE:             return "LE";
+	case TOK_AND:            return "AND";
+	case TOK_OR:             return "OR";
+	case TOK_PIPE:           return "PIPE";
+	case TOK_AMP:            return "AMP";
+	case TOK_HAT:            return "HAT";
+	case TOK_ARROW:          return "ARROW";
+	case TOK_COMMA:          return "COMMA";
+	case TOK_COLON:          return "COLON";
+	case TOK_DOT:            return "DOT";
+	case TOK_QUESTION:       return "QUESTION";
+	case TOK_SEMICOLON:      return "SEMICOLON";
+	case TOK_EOF:            return "EOF";
 	}
 }
 
-static inline int cur_in_range(Lexer *lexer) {
+static inline int cur_in_range(const Lexer *lexer) {
 	return lexer->cur < lexer->src->buf.len;
 }
 
@@ -132,12 +83,12 @@ static inline int is_ident_start(char ch) {
 	return isalpha(c) || c == '_';
 }
 
-static inline char cur_lexer_ch(Lexer *lexer) {
+static inline char cur_lexer_ch(const Lexer *lexer) {
 	assert(cur_in_range(lexer) && "Lexer cursor is out of source bounds");
 	return lexer->src->buf.data[lexer->cur];
 }
 
-static inline char peek_lexer_ch(Lexer *lexer, size_t offset) {
+static inline char peek_lexer_ch(const Lexer *lexer, size_t offset) {
 	if (lexer->cur + offset >= lexer->src->buf.len) {
 		return '\0';
 	}
@@ -185,7 +136,7 @@ static LexResult lex_emit(Lexer *lexer, TokenKind kind, size_t start, size_t end
 	return LEX_OK;
 }
 
-static Span span_from(Lexer *lexer, size_t start) {
+static Span span_from(const Lexer *lexer, size_t start) {
 	assert(lexer->cur > start && "Cannot start span from future");
 	return (Span){
 		.start = start,
@@ -237,7 +188,7 @@ static int compare_span(const char *token, size_t len, const char *ref) {
 }
 
 // PERF: a perfect hashtable would do better
-static TokenKind try_keyword_cast(Lexer *lexer, size_t start) {
+static TokenKind try_keyword_cast(const Lexer *lexer, size_t start) {
 	size_t end = lexer->cur; // exclusive
 	assert(end > start);
 	size_t tok_len = end - start;
@@ -275,9 +226,8 @@ static TokenKind match_sym(Lexer *lexer, char sym, TokenKind match, TokenKind mi
 	return miss;
 }
 
-static TokenKind match_sym2(Lexer *lexer, char sym1, char sym2, TokenKind match1, TokenKind match2,
-                            TokenKind miss)
-{
+static TokenKind match_sym2(Lexer *lexer, char sym1, char sym2,
+                            TokenKind match1, TokenKind match2, TokenKind miss) {
 	if (peek_lexer_ch(lexer, 1) == sym1) {
 		lexer->cur++;
 		return match1;
@@ -403,7 +353,7 @@ static LexResult consume_token(Lexer *lexer) {
 	return lex_emit(lexer, TOK_UNK, tok_start, lexer->cur);
 }
 
-Lexer lex(SourceFile *src) {
+Lexer lex(const SourceFile *src) {
 	const size_t START_TOKENS_CAP = 128;
 
 	Lexer lexer = {.src = src, .cur = 0};

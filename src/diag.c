@@ -29,7 +29,7 @@ void add_diag_expected(Diags *diags, Span span, const char *message, const char 
 	}
 }
 
-void print_diag(const SourceFile *src, Diag *diag) {
+void print_diag(const SourceFile *src, const Diag *diag) {
 	SourceLocation loc = locate_offset(src->buf.data, diag->span.start);
 	printf("%s:%zu:%zu " CLR_RED "Error: %s." CLR_END,
 		src->filename,

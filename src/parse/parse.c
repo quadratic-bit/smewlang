@@ -269,7 +269,7 @@ static AstItem *parse_item(Parser *parser) {
 	return item;
 }
 
-Parser parse(SourceFile *src, Token *tokens) {
+Parser parse(const SourceFile *src, const Token *tokens) {
 	Parser parser = (Parser){.src = src, .cur = tokens};
 	arena_init(&parser.arena);
 	vec_init  (&parser.tree.items, DEFAULT_AST_ITEMS_CAP);

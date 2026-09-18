@@ -79,14 +79,14 @@ typedef struct {
 typedef Vec(Token) Tokens;
 
 typedef struct {
-	SourceFile *src;
-	size_t      cur;
+	const SourceFile *src;
+	size_t cur;
 
 	Tokens toks;
 	Diags  diags;
 } Lexer;
 
-Lexer lex(SourceFile *src);
+Lexer lex(const SourceFile *src);
 
 void lex_free(Lexer *lexer);
 

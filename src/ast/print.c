@@ -35,7 +35,7 @@ static void print_tab(size_t depth) {
 	if (depth > 0) printf("%*s", (int)(depth * 4), "");
 }
 
-static void print_ident(const char *src, AstIdent *ident) {
+static void print_ident(const char *src, const AstIdent *ident) {
 	if (ident->span.len == 0) {
 		printf(CLR_RED "<UNK>" CLR_END);
 	} else {
@@ -43,7 +43,7 @@ static void print_ident(const char *src, AstIdent *ident) {
 	}
 }
 
-static void print_type(const char *src, AstType *type) {
+static void print_type(const char *src, const AstType *type) {
 	switch (type->kind) {
 	case AST_TYPE_UNKNOWN:
 		printf(CLR_YELLOW "UNKNOWN" CLR_END);
@@ -82,7 +82,7 @@ static void print_type(const char *src, AstType *type) {
 	}
 }
 
-static void print_struct_field(const char *src, AstStructField *field, size_t depth) {
+static void print_struct_field(const char *src, const AstStructField *field, size_t depth) {
 	print_tab(depth);
 	printf(CLR_CYAN "|>" CLR_GREEN " FIELD " CLR_END);
 	print_ident(src, field->name);
@@ -91,7 +91,7 @@ static void print_struct_field(const char *src, AstStructField *field, size_t de
 	printf("\n");
 }
 
-static void print_struct(const char *src, AstStruct *struc, size_t depth) {
+static void print_struct(const char *src, const AstStruct *struc, size_t depth) {
 	print_tab(depth);
 	printf(CLR_GREEN "STRUCT " CLR_END);
 	print_ident(src, struc->name);
@@ -103,7 +103,7 @@ static void print_struct(const char *src, AstStruct *struc, size_t depth) {
 	}
 }
 
-static void print_func_param(const char *src, AstFunctionParam *param, size_t depth) {
+static void print_func_param(const char *src, const AstFunctionParam *param, size_t depth) {
 	print_tab(depth);
 	printf(CLR_CYAN "|>" CLR_GREEN " PARAM " CLR_END);
 	print_ident(src, param->name);
@@ -112,7 +112,7 @@ static void print_func_param(const char *src, AstFunctionParam *param, size_t de
 	printf("\n");
 }
 
-static void print_literal(AstLiteral *lit) {
+static void print_literal(const AstLiteral *lit) {
 	switch (lit->kind) {
 	case AST_LITERAL_INT:
 		printf(CLR_YELLOW "int(%d)" CLR_END, lit->integer);
@@ -126,7 +126,7 @@ static void print_literal(AstLiteral *lit) {
 	}
 }
 
-static void print_expr(const char *src, AstExpr *expr, size_t depth) {
+static void print_expr(const char *src, const AstExpr *expr, size_t depth) {
 	switch (expr->kind) {
 	case AST_EXPR_UNKNOWN:
 		print_tab(depth);
@@ -178,7 +178,7 @@ static void print_expr(const char *src, AstExpr *expr, size_t depth) {
 	}
 }
 
-static void print_func(const char *src, AstFunction *func, size_t depth) {
+static void print_func(const char *src, const AstFunction *func, size_t depth) {
 	print_tab(depth);
 	if (func->is_public) {
 		printf(CLR_CYAN "PUB " CLR_END);
@@ -198,7 +198,7 @@ static void print_func(const char *src, AstFunction *func, size_t depth) {
 	print_expr(src, func->block->body, depth + 1);
 }
 
-static void print_item(const char *src, AstItem *item, size_t depth) {
+static void print_item(const char *src, const AstItem *item, size_t depth) {
 	switch (item->kind) {
 	case AST_ITEM_FUNCTION:
 		print_func(src, item->function, depth);
@@ -209,7 +209,7 @@ static void print_item(const char *src, AstItem *item, size_t depth) {
 	}
 }
 
-void print_ast(const char *src, Ast *ast) {
+void print_ast(const char *src, const Ast *ast) {
 	for (size_t i = 0; i < ast->items.len; ++i) {
 		print_item(src, ast->items.data[i], 0);
 	}
