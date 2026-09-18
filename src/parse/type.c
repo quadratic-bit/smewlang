@@ -1,4 +1,5 @@
 #include "diag.h"
+#include "expr.h"
 #include "type.h"
 #include "parse.h"
 
@@ -92,19 +93,36 @@ static AstType *parse_type_postfix(Parser *parser, AstType *base, uint8_t min_bp
 		if (bp <= min_bp) return NULL;
 
 		consume(parser, TOK_LBRACKET);
-		consume(parser, TOK_RBRACKET); // TODO: array_fixed
-		// TODO: recovery
+		AstExpr *arr_len = parse_expr(parser, MIN_BP);
+		// XXX: return NULL for unit? to not waste space
+		consume_or_insert(parser, TOK_RBRACKET, "closing bracket");
 
 		AstType *new_base = parser_alloc_one(parser, AstType);
-		new_base->kind            = AST_TYPE_ARRAY_DYN;
-		new_base->array_dyn.inner = base;
-		new_base->span            = span_span(base->span, (cur_tok + 1)->span);
+
+		if (arr_len->kind          == AST_EXPR_LITERAL &&
+		    arr_len->literal->kind == AST_LITERAL_UNIT)
+		{
+			new_base->kind            = AST_TYPE_ARRAY_DYN;
+			new_base->array_dyn.inner = base;
+			new_base->span            = span_span(base->span, (cur_tok + 1)->span);
+			// XXX: the (cur_tok + 1) thing is not; implement prev(parser)
+
+			return new_base;
+		}
+
+		new_base->kind               = AST_TYPE_ARRAY_FIXED;
+		new_base->array_fixed.inner  = base;
+		new_base->array_fixed.length = arr_len;
+		new_base->span               = span_span(base->span, arr_len->span);
+		// XXX: same thing here!!! we're one off, even
+
 		return new_base;
 	}
 
 	return NULL;
 }
 
+// TODO: generics
 AstType *parse_type(Parser *parser, uint8_t min_bp) {
 	AstType *base = parse_type_prefix(parser);
 

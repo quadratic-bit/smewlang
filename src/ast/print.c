@@ -71,6 +71,11 @@ static void print_type(const char *src, AstType *type) {
 		print_type(src, type->array_dyn.inner);
 		printf(")");
 		break;
+	case AST_TYPE_ARRAY_FIXED: // TODO: implement inlining of expressions for debugging
+		printf(CLR_YELLOW "ARRAY_FIXED" CLR_END "(");
+		print_type(src, type->array_fixed.inner);
+		printf(")");
+		break;
 	default:
 		// TODO:
 		assert(0 && "Print for this type is not implemented");
