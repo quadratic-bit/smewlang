@@ -1,3 +1,4 @@
+#include "diag.h"
 #include "type.h"
 #include "parse.h"
 

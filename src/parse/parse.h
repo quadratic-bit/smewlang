@@ -1,5 +1,5 @@
-#ifndef PARSE_INTERNAL_H
-#define PARSE_INTERNAL_H
+#ifndef PARSE_PARSE_H
+#define PARSE_PARSE_H
 
 #include <smew/arena.h>
 #include <smew/parse.h>
@@ -23,7 +23,5 @@ void *arena_alloc_guarded(Arena *arena, size_t size, size_t align);
 void      consume          (Parser *parser, TokenKind expect);
 int       consume_or_insert(Parser *parser, TokenKind expect, const char *expect_str);
 AstIdent *consume_ident    (Parser *parser);
-
-void add_diag_expected(Parser *parser, ParseDiagKind kind, Span span, const char *expect);
 
 #endif
