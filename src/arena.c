@@ -3,7 +3,6 @@
 #include <assert.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdio.h>
 #include <stdlib.h>
 
 // TODO: check usage on real workloads and maybe make dynamic
@@ -12,7 +11,6 @@ static const size_t ARENA_BLOCK_SIZE = 64 * 1024;
 static ArenaResult arena_block_init(ArenaBlock **block, size_t requested) {
 	ArenaBlock *new_block = malloc(sizeof *new_block);
 	if (new_block == NULL) {
-		perror("arena_block_init@malloc");
 		return ARENA_ERR;
 	}
 
@@ -22,7 +20,6 @@ static ArenaResult arena_block_init(ArenaBlock **block, size_t requested) {
 
 	void *data = malloc(alloc_size);
 	if (data == NULL) {
-		perror("arena_block_init@malloc");
 		free(new_block);
 		return ARENA_ERR;
 	}
@@ -37,6 +34,8 @@ static ArenaResult arena_block_init(ArenaBlock **block, size_t requested) {
 }
 
 ArenaResult arena_init(Arena *arena) {
+	assert(arena->cur_block == NULL);
+
 	ArenaBlock *block;
 	ArenaResult ret = arena_block_init(&block, 0);
 	if (ret != ARENA_OK) {
@@ -49,7 +48,9 @@ ArenaResult arena_init(Arena *arena) {
 
 void *arena_alloc(Arena *arena, size_t size, size_t align) {
 	assert(align > 0 && "Alignment must not be zero");
-	assert((align & (align - 1)) == 0 && "Alignment must not be a power of two");
+	assert((align & (align - 1)) == 0 && "Alignment must be a power of two");
+	assert(size > 0 && "Allocation size must not be zero");
+	assert(arena->cur_block != NULL && "Arena must be initialized");
 
 	ArenaBlock *cur = arena->cur_block;
 
@@ -87,7 +88,7 @@ retry:
 void arena_free(Arena *arena) {
 	while (arena->cur_block != NULL) {
 		free(arena->cur_block->data);
-		ArenaBlock *cur = arena->cur_block;
+		ArenaBlock *cur  = arena->cur_block;
 		arena->cur_block = arena->cur_block->prev;
 		free(cur);
 	}
