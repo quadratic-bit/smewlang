@@ -23,7 +23,7 @@ static AstLiteral *consume_literal_int(Parser *parser) {
 	AstLiteral *lit = parser_alloc_one(parser, AstLiteral);
 	lit->kind = AST_LITERAL_INT;
 	lit->span = parser->cur->span;
-	lit->integer = cast_str_uint32(parser->src->data, lit->span);
+	lit->integer = cast_str_uint32(parser->src->buf.data, lit->span);
 	parser->cur++;
 	return lit;
 }

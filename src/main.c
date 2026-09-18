@@ -1,9 +1,9 @@
 #include <smew/arena.h>
 #include <smew/ast.h>
-#include <smew/buf.h>
 #include <smew/colors.h>
 #include <smew/lex.h>
 #include <smew/parse.h>
+#include <smew/source.h>
 #include <smew/vec.h>
 
 #include <assert.h>
@@ -26,20 +26,21 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 
-	SourceBuffer source;
-	vec_init(&source, BUFSIZ);
+	SourceFile source;
+	vec_init(&source.buf, BUFSIZ);
+	source.filename = input_filename;
 
-	if (!source.data) return 1;
-	assert(source.cap > 0);
-	assert(source.len == 0);
+	if (!source.buf.data) return 1;
+	assert(source.buf.cap > 0);
+	assert(source.buf.len == 0);
 
-	if (buf_read(&source, input_file) == BUF_ERR) {
-		vec_free(&source);
+	if (file_read(&source, input_file) == BUF_ERR) {
+		vec_free(&source.buf);
 		fclose(input_file);
 		return 1;
 	}
 
-	Lexer lexer = lex(&source, input_filename);
+	Lexer lexer = lex(&source);
 
 	for (size_t i = 0; i < lexer.toks.len; ++i) {
 		Token tok = lexer.toks.data[i];
@@ -49,7 +50,7 @@ int main(int argc, char **argv) {
 		    tok.kind == TOK_LITERAL_STRING)
 		{
 			printf("(" CLR_MAGENTA "%.*s" CLR_END ")",
-			       (int)tok.span.len, lexer.src->data + tok.span.start);
+			       (int)tok.span.len, lexer.src->buf.data + tok.span.start);
 		}
 		putchar('\n');
 	}
@@ -58,24 +59,24 @@ int main(int argc, char **argv) {
 
 	for (size_t i = 0; i < lexer.diags.len; ++i) {
 		Diag *diag = &lexer.diags.data[i];
-		print_diag(input_filename, &source, diag);
+		print_diag(&source, diag);
 		printf("\n");
 	}
 	if (lexer.diags.len != 0) {
 		lex_free(&lexer);
-		vec_free(&source);
+		vec_free(&source.buf);
 		fclose(input_file);
 		return 1;
 	}
 
-	Parser parser = parse(input_filename, lexer.src, lexer.toks.data);
-	print_ast(lexer.src->data, &parser.tree);
+	Parser parser = parse(lexer.src, lexer.toks.data);
+	print_ast(lexer.src->buf.data, &parser.tree);
 
 	putchar('\n');
 
 	for (size_t i = 0; i < parser.diags.len; ++i) {
 		Diag *diag = &parser.diags.data[i];
-		print_diag(input_filename, lexer.src, diag);
+		print_diag(lexer.src, diag);
 		printf("\n");
 	}
 
@@ -84,7 +85,7 @@ int main(int argc, char **argv) {
 	arena_free(&parser.arena);
 
 	lex_free(&lexer);
-	vec_free(&source);
+	vec_free(&source.buf);
 	fclose(input_file);
 	return 0;
 }

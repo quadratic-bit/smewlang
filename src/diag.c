@@ -29,10 +29,10 @@ void add_diag_expected(Diags *diags, Span span, const char *message, const char 
 	}
 }
 
-void print_diag(const char *filename, const SourceBuffer *src, Diag *diag) {
-	SourceLocation loc = locate_offset(src->data, diag->span.start);
+void print_diag(const SourceFile *src, Diag *diag) {
+	SourceLocation loc = locate_offset(src->buf.data, diag->span.start);
 	printf("%s:%zu:%zu " CLR_RED "Error: %s." CLR_END,
-		filename,
+		src->filename,
 		loc.line + 1,
 		loc.col  + 1,
 		diag->message
@@ -43,19 +43,18 @@ void print_diag(const char *filename, const SourceBuffer *src, Diag *diag) {
 	putchar('\n');
 	size_t nl_cur = diag->span.start;
 	size_t left_pad = 0;
-	while (nl_cur > 0 && src->data[nl_cur] != '\n') {
+	while (nl_cur > 0 && src->buf.data[nl_cur] != '\n') {
 		nl_cur--;
 	}
-	if (src->data[nl_cur] == '\n') nl_cur++;
+	if (src->buf.data[nl_cur] == '\n') nl_cur++;
 	for (size_t j = nl_cur; j < diag->span.start; ++j) {
-		putchar(src->data[j]);
+		putchar(src->buf.data[j]);
 		left_pad++;
 	}
-	printf("%.*s", (int)diag->span.len, src->data + diag->span.start);
+	printf("%.*s", (int)diag->span.len, src->buf.data + diag->span.start);
 	nl_cur = diag->span.start + diag->span.len;
-	while (nl_cur < src->len && src->data[nl_cur] != '\n') {
-		putchar(src->data[nl_cur]);
-		nl_cur++;
+	while (nl_cur < src->buf.len && src->buf.data[nl_cur] != '\n') {
+		putchar(src->buf.data[nl_cur++]);
 	}
 	putchar('\n');
 	for (size_t j = 0; j < left_pad; j++) {

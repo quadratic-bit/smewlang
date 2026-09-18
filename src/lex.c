@@ -1,9 +1,8 @@
 #include <smew/lex.h>
 
-#include <smew/buf.h>
 #include <smew/colors.h>
 #include <smew/diag.h>
-#include <smew/line.h>
+#include <smew/source.h>
 #include <smew/vec.h>
 
 #include <assert.h>
@@ -120,7 +119,7 @@ const char *token_kind_name(TokenKind kind) {
 }
 
 static inline int cur_in_range(Lexer *lexer) {
-	return lexer->cur < lexer->src->len;
+	return lexer->cur < lexer->src->buf.len;
 }
 
 static inline int is_ident_continue(char ch) {
@@ -135,14 +134,14 @@ static inline int is_ident_start(char ch) {
 
 static inline char cur_lexer_ch(Lexer *lexer) {
 	assert(cur_in_range(lexer) && "Lexer cursor is out of source bounds");
-	return lexer->src->data[lexer->cur];
+	return lexer->src->buf.data[lexer->cur];
 }
 
 static inline char peek_lexer_ch(Lexer *lexer, size_t offset) {
-	if (lexer->cur + offset >= lexer->src->len) {
+	if (lexer->cur + offset >= lexer->src->buf.len) {
 		return '\0';
 	}
-	return lexer->src->data[lexer->cur + offset];
+	return lexer->src->buf.data[lexer->cur + offset];
 }
 
 static void consume_whitespace(Lexer *lexer) {
@@ -242,7 +241,7 @@ static TokenKind try_keyword_cast(Lexer *lexer, size_t start) {
 	size_t end = lexer->cur; // exclusive
 	assert(end > start);
 	size_t tok_len = end - start;
-	const char *tok = lexer->src->data + start;
+	const char *tok = lexer->src->buf.data + start;
 	if (compare_span(tok, tok_len, "pub"   )) return TOK_KEY_PUB;
 	if (compare_span(tok, tok_len, "fn"    )) return TOK_KEY_FN;
 	if (compare_span(tok, tok_len, "in"    )) return TOK_KEY_IN;
@@ -292,11 +291,11 @@ static TokenKind match_sym2(Lexer *lexer, char sym1, char sym2, TokenKind match1
 
 static LexResult consume_token(Lexer *lexer) {
 	consume_whitespace(lexer);
-	assert(lexer->cur <= lexer->src->len);
-	if (lexer->cur == lexer->src->len) return LEX_OK;
+	assert(lexer->cur <= lexer->src->buf.len);
+	if (lexer->cur == lexer->src->buf.len) return LEX_OK;
 
 	size_t tok_start = lexer->cur;
-	char cur_ch = lexer->src->data[lexer->cur];
+	char cur_ch = lexer->src->buf.data[lexer->cur];
 	TokenKind kind = TOK_UNK;
 	int is_comment = 0;
 
@@ -404,10 +403,10 @@ static LexResult consume_token(Lexer *lexer) {
 	return lex_emit(lexer, TOK_UNK, tok_start, lexer->cur);
 }
 
-Lexer lex(SourceBuffer *buf, const char *filename) {
+Lexer lex(SourceFile *src) {
 	const size_t START_TOKENS_CAP = 128;
 
-	Lexer lexer = {.filename = filename, .src = buf, .cur = 0};
+	Lexer lexer = {.src = src, .cur = 0};
 	vec_init(&lexer.toks,  START_TOKENS_CAP);
 	vec_init(&lexer.diags, 1);
 

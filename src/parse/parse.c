@@ -8,7 +8,7 @@
 #include <smew/colors.h>
 #include <smew/diag.h>
 #include <smew/lex.h>
-#include <smew/line.h>
+#include <smew/source.h>
 #include <smew/vec.h>
 
 #include <assert.h>
@@ -269,8 +269,8 @@ static AstItem *parse_item(Parser *parser) {
 	return item;
 }
 
-Parser parse(const char *filename, SourceBuffer *buf, Token *tokens) {
-	Parser parser = (Parser){.filename = filename, .src = buf, .cur = tokens};
+Parser parse(SourceFile *src, Token *tokens) {
+	Parser parser = (Parser){.src = src, .cur = tokens};
 	arena_init(&parser.arena);
 	vec_init  (&parser.tree.items, DEFAULT_AST_ITEMS_CAP);
 	vec_init  (&parser.diags, 1);

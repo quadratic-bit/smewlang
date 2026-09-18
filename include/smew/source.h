@@ -1,7 +1,19 @@
-#ifndef LINE_H
-#define LINE_H
+#ifndef SOURCE_H
+#define SOURCE_H
 
+#include <smew/vec.h>
+
+#include <stdio.h>
 #include <stddef.h>
+
+typedef enum {BUF_OK, BUF_ERR} BufResult;
+
+typedef struct {
+	const char *filename;
+	Vec(char)   buf;
+} SourceFile;
+
+BufResult file_read(SourceFile *file, FILE *file_handler);
 
 typedef struct {
 	size_t start;

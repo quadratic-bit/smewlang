@@ -1,9 +1,8 @@
 #ifndef LEX_H
 #define LEX_H
 
-#include <smew/buf.h>
 #include <smew/diag.h>
-#include <smew/line.h>
+#include <smew/source.h>
 #include <smew/vec.h>
 
 #include <stddef.h>
@@ -80,16 +79,14 @@ typedef struct {
 typedef Vec(Token) Tokens;
 
 typedef struct {
-	const char *filename;
-
-	SourceBuffer *src;
-	size_t        cur;
+	SourceFile *src;
+	size_t      cur;
 
 	Tokens toks;
 	Diags  diags;
 } Lexer;
 
-Lexer lex(SourceBuffer *buf, const char *filename);
+Lexer lex(SourceFile *src);
 
 void lex_free(Lexer *lexer);
 

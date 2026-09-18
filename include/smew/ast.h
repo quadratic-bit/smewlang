@@ -1,7 +1,7 @@
 #ifndef AST_H
 #define AST_H
 
-#include <smew/line.h>
+#include <smew/source.h>
 #include <smew/vec.h>
 
 #include <stdint.h>

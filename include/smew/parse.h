@@ -10,15 +10,14 @@
 #include <stdint.h>
 
 typedef struct {
-	const char   *filename;
-	SourceBuffer *src;
-	const Token  *cur;
+	SourceFile  *src;
+	const Token *cur;
 
 	Ast   tree;
 	Diags diags;
 	Arena arena;
 } Parser;
 
-Parser parse(const char *filename, SourceBuffer *buf, Token *tokens);
+Parser parse(SourceFile *src, Token *tokens);
 
 #endif
