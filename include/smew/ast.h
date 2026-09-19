@@ -29,6 +29,12 @@ typedef enum {
 	AST_TYPE_GENERIC       // T(A, B)
 } AstTypeKind;
 
+typedef struct AstTypeGeneric AstTypeGeneric;
+struct AstTypeGeneric {
+	AstType        *arg;
+	AstTypeGeneric *next;
+};
+
 struct AstType {
 	Span span;
 	AstTypeKind kind;
@@ -47,7 +53,7 @@ struct AstType {
 
 		struct {
 			AstType        *base;
-			Vec(AstType *)  args;
+			AstTypeGeneric *args;
 		} generic;
 	};
 };

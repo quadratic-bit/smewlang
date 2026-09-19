@@ -5,5 +5,5 @@ struct ScoreTable {
 
 struct Record {
     name  : &Byte[N];
-    score :  int32;
+    score : Result(&Option(Ok, None)[], Err**);
 }

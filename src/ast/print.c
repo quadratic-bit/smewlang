@@ -167,9 +167,27 @@ static void print_type(const char *src, const AstType *type, size_t depth, int c
 		printf(CLR_GREEN "LENGTH" CLR_END "\n");
 		print_expr(src, type->array_fixed.length, depth + 2, cont);
 		break;
-	default:
-		// TODO:
-		assert(0 && "Print for this type is not implemented");
+	case AST_TYPE_GENERIC:
+		printf(CLR_YELLOW "GENERIC" CLR_END "\n");
+		print_tab(depth + 1, cont);
+		printf(CLR_GREEN "TYPE" CLR_END "\n");
+		cont[depth] = 1;
+		print_type(src, type->generic.base, depth + 2, cont);
+		cont[depth] = 0;
+
+		print_tab(depth + 1, cont);
+		printf(CLR_GREEN "ARGS" CLR_END "\n");
+		cont[depth + 1] = 1;
+		AstTypeGeneric *cur = type->generic.args;
+		while (cur != NULL) {
+			if (cur->next == NULL) {
+				cont[depth + 1] = 0;
+			}
+			print_type(src, cur->arg, depth + 2, cont);
+			cur = cur->next;
+		}
+		cont[depth + 1] = 0;
+		break;
 	}
 }
 
@@ -200,6 +218,7 @@ static void print_struct(const char *src, const AstStruct *struc, size_t depth, 
 		print_struct_field(src, field, depth + 1, cont);
 		field = field->next;
 	}
+	cont[depth] = 0;
 }
 
 static void print_func_param(const char *src, const AstFunctionParam *param, size_t depth, int cont[]) {

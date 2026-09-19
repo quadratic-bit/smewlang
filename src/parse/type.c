@@ -118,13 +118,49 @@ static AstType *parse_type_postfix(Parser *parser, AstType *base, uint8_t min_bp
 	return NULL;
 }
 
-// TODO: generics
 AstType *parse_type(Parser *parser, uint8_t min_bp) {
 	AstType *base = parse_type_prefix(parser);
 
 	if (base == NULL) {
 		add_diag_expected(&parser->diags, parser->cur->span, "Unexpected token", "type");
 		return unknown_type(parser);
+	}
+
+	if (parser->cur->kind == TOK_LPAREN) {
+		consume(parser, TOK_LPAREN);
+
+		AstTypeGeneric  *args = NULL;
+		AstTypeGeneric **tail = &args;
+
+		while (1) {
+			AstType *arg = parse_type(parser, MIN_BP);
+
+			AstTypeGeneric *generic = parser_alloc_one(parser, AstTypeGeneric);
+			generic->arg  = arg;
+			generic->next = NULL;
+
+			*tail = generic;
+			tail = &generic->next;
+
+			if (parser->cur->kind == TOK_RPAREN) {
+				break;
+			}
+
+			if (!consume_or_insert(parser, TOK_COMMA, "comma")) {
+				break;
+			}
+		}
+
+		const Token *rparen = parser->cur;
+		consume_or_insert(parser, TOK_RPAREN, "closing parenthesis");
+
+		AstType *new_base = parser_alloc_one(parser, AstType);
+		new_base->kind = AST_TYPE_GENERIC;
+		new_base->generic.base = base;
+		new_base->generic.args = args;
+		new_base->span = span_span(base->span, rparen->span);
+
+		base = new_base;
 	}
 
 	while (1) {
