@@ -29,6 +29,10 @@ void *arena_alloc_guarded(Arena *arena, size_t size, size_t align) {
 // TODO: tweak
 static const size_t DEFAULT_AST_ITEMS_CAP = 8;
 
+const Token *prev(const Parser *parser) {
+	return parser->cur - 1;
+}
+
 void consume(Parser *parser, TokenKind expect) {
 	assert(parser->cur->kind == expect && "Unexpected token");
 	parser->cur++;

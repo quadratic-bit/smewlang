@@ -103,8 +103,7 @@ static AstType *parse_type_postfix(Parser *parser, AstType *base, uint8_t min_bp
 		{
 			new_base->kind            = AST_TYPE_ARRAY_DYN;
 			new_base->array_dyn.inner = base;
-			new_base->span            = span_span(base->span, (cur_tok + 1)->span);
-			// XXX: the (cur_tok + 1) thing is not; implement prev(parser)
+			new_base->span            = span_span(base->span, prev(parser)->span);
 
 			return new_base;
 		}
@@ -112,8 +111,7 @@ static AstType *parse_type_postfix(Parser *parser, AstType *base, uint8_t min_bp
 		new_base->kind               = AST_TYPE_ARRAY_FIXED;
 		new_base->array_fixed.inner  = base;
 		new_base->array_fixed.length = arr_len;
-		new_base->span               = span_span(base->span, arr_len->span);
-		// XXX: same thing here!!! we're one off, even
+		new_base->span               = span_span(base->span, prev(parser)->span);
 
 		return new_base;
 	}

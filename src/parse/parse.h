@@ -20,6 +20,8 @@ void *arena_alloc_guarded(Arena *arena, size_t size, size_t align);
 #define parser_alloc_one(parser, type) \
 	((type *)arena_alloc_guarded(&(parser)->arena, sizeof(type), alignof(type)))
 
+const Token *prev(const Parser *parser);
+
 void      consume          (Parser *parser, TokenKind expect);
 int       consume_or_insert(Parser *parser, TokenKind expect, const char *expect_str);
 AstIdent *consume_ident    (Parser *parser);
