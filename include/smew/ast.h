@@ -132,7 +132,7 @@ typedef struct {
 
 	union {
 		/* Nothing       Unit; */
-		uint32_t         integer;
+		/* Nothing       Int; */
 		AstStructLiteral struc;
 	};
 } AstLiteral;

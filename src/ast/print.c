@@ -112,10 +112,10 @@ static void print_func_param(const char *src, const AstFunctionParam *param, siz
 	printf("\n");
 }
 
-static void print_literal(const AstLiteral *lit) {
+static void print_literal(const char *src, const AstLiteral *lit) {
 	switch (lit->kind) {
 	case AST_LITERAL_INT:
-		printf(CLR_YELLOW "int(%d)" CLR_END, lit->integer);
+		printf(CLR_YELLOW "int(%.*s)" CLR_END, (int)(lit->span.len), src + lit->span.start);
 		break;
 	case AST_LITERAL_UNIT:
 		printf(CLR_YELLOW "unit" CLR_END);
@@ -144,7 +144,7 @@ static void print_expr(const char *src, const AstExpr *expr, size_t depth) {
 	case AST_EXPR_LITERAL:
 		print_tab(depth);
 		printf(CLR_GREEN "LITERAL " CLR_END);
-		print_literal(expr->literal);
+		print_literal(src, expr->literal);
 		printf("\n");
 		break;
 

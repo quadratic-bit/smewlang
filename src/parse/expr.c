@@ -5,26 +5,16 @@
 #include <smew/ast.h>
 
 #include <assert.h>
-#include <ctype.h>
-
-// XXX: I'm sure I missed some edge cases
-static uint32_t cast_str_uint32(const char *src, Span span) {
-	uint32_t num = 0;
-	for (uint32_t i = 0; i < span.len; ++i) {
-		unsigned char digit = (unsigned char)src[span.start + i];
-		assert(isdigit(digit));
-		num = num * 10 + (uint32_t)(src[span.start + i] - '0');
-	}
-	return num;
-}
 
 static AstLiteral *consume_literal_int(Parser *parser) {
 	assert(parser->cur->kind == TOK_LITERAL_INT && "Unexpected token kind");
+
 	AstLiteral *lit = parser_alloc_one(parser, AstLiteral);
 	lit->kind = AST_LITERAL_INT;
 	lit->span = parser->cur->span;
-	lit->integer = cast_str_uint32(parser->src->buf.data, lit->span);
+
 	parser->cur++;
+
 	return lit;
 }
 
