@@ -91,22 +91,21 @@ static AstType *parse_type_postfix(Parser *parser, AstType *base, uint8_t min_bp
 		uint8_t bp = get_type_bp(TOK_LBRACKET).left;
 		if (bp <= min_bp) return NULL;
 
-		consume(parser, TOK_LBRACKET);
-		AstExpr *arr_len = parse_expr(parser, MIN_BP);
-		// XXX: return NULL for unit? to not waste space
-		consume_or_insert(parser, TOK_RBRACKET, "closing bracket");
-
 		AstType *new_base = parser_alloc_one(parser, AstType);
 
-		if (arr_len->kind          == AST_EXPR_LITERAL &&
-		    arr_len->literal->kind == AST_LITERAL_UNIT)
-		{
+		consume(parser, TOK_LBRACKET);
+		if (parser->cur->kind == TOK_RBRACKET) {
+			consume(parser, TOK_RBRACKET);
+
 			new_base->kind            = AST_TYPE_ARRAY_DYN;
 			new_base->array_dyn.inner = base;
 			new_base->span            = span_span(base->span, prev(parser)->span);
 
 			return new_base;
 		}
+
+		AstExpr *arr_len = parse_expr(parser, MIN_BP);
+		consume_or_insert(parser, TOK_RBRACKET, "closing bracket");
 
 		new_base->kind               = AST_TYPE_ARRAY_FIXED;
 		new_base->array_fixed.inner  = base;
