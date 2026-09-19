@@ -72,8 +72,6 @@ int main(int argc, char **argv) {
 	Parser parser = parse(&source, lexer.toks.data);
 	print_ast(lexer.src->buf.data, &parser.tree);
 
-	putchar('\n');
-
 	for (size_t i = 0; i < parser.diags.len; ++i) {
 		Diag *diag = &parser.diags.data[i];
 		print_diag(lexer.src, diag);
