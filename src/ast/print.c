@@ -43,75 +43,6 @@ static void print_ident(const char *src, const AstIdent *ident) {
 	}
 }
 
-static void print_type(const char *src, const AstType *type) {
-	switch (type->kind) {
-	case AST_TYPE_UNKNOWN:
-		printf(CLR_YELLOW "UNKNOWN" CLR_END);
-		break;
-	case AST_TYPE_NAME:
-		print_ident(src, type->name.ident);
-		break;
-	case AST_TYPE_BORROW:
-		printf(CLR_YELLOW "BORROW" CLR_END "(");
-		print_type(src, type->borrow.inner);
-		printf(")");
-		break;
-	case AST_TYPE_BORROW_MUT:
-		printf(CLR_YELLOW "BORROW_MUT" CLR_END "(");
-		print_type(src, type->borrow_mut.inner);
-		printf(")");
-		break;
-	case AST_TYPE_POINTER:
-		printf(CLR_YELLOW "POINTER" CLR_END "(");
-		print_type(src, type->pointer.inner);
-		printf(")");
-		break;
-	case AST_TYPE_ARRAY_DYN:
-		printf(CLR_YELLOW "ARRAY_DYN" CLR_END "(");
-		print_type(src, type->array_dyn.inner);
-		printf(")");
-		break;
-	case AST_TYPE_ARRAY_FIXED: // TODO: implement inlining of expressions for debugging
-		printf(CLR_YELLOW "ARRAY_FIXED" CLR_END "(");
-		print_type(src, type->array_fixed.inner);
-		printf(")");
-		break;
-	default:
-		// TODO:
-		assert(0 && "Print for this type is not implemented");
-	}
-}
-
-static void print_struct_field(const char *src, const AstStructField *field, size_t depth) {
-	print_tab(depth);
-	printf(CLR_CYAN "|>" CLR_GREEN " FIELD " CLR_END);
-	print_ident(src, field->name);
-	printf(CLR_GREEN " TYPE " CLR_END);
-	print_type(src, field->type);
-	printf("\n");
-}
-
-static void print_struct(const char *src, const AstStruct *struc, size_t depth) {
-	print_tab(depth);
-	printf(CLR_GREEN "STRUCT " CLR_END);
-	print_ident(src, struc->name);
-	printf("\n");
-	AstStructField *field = struc->fields;
-	while (field != NULL) {
-		print_struct_field(src, field, depth + 1);
-		field = field->next;
-	}
-}
-
-static void print_func_param(const char *src, const AstFunctionParam *param, size_t depth) {
-	print_tab(depth);
-	printf(CLR_CYAN "|>" CLR_GREEN " PARAM " CLR_END);
-	print_ident(src, param->name);
-	printf(CLR_GREEN " TYPE " CLR_END);
-	print_type(src, param->type);
-	printf("\n");
-}
-
 static void print_literal(const char *src, const AstLiteral *lit) {
 	switch (lit->kind) {
 	case AST_LITERAL_INT:
@@ -178,16 +109,97 @@ static void print_expr(const char *src, const AstExpr *expr, size_t depth) {
 	}
 }
 
+static void print_type(const char *src, const AstType *type, size_t depth) {
+	print_tab(depth);
+	switch (type->kind) {
+	case AST_TYPE_UNKNOWN:
+		printf(CLR_YELLOW "UNKNOWN" CLR_END "\n");
+		break;
+	case AST_TYPE_NAME:
+		print_ident(src, type->name.ident);
+		printf("\n");
+		break;
+	case AST_TYPE_BORROW:
+		printf(CLR_YELLOW "BORROW" CLR_END "\n");
+		print_type(src, type->borrow.inner, depth + 1);
+		break;
+	case AST_TYPE_BORROW_MUT:
+		printf(CLR_YELLOW "BORROW_MUT" CLR_END "\n");
+		print_type(src, type->borrow_mut.inner, depth + 1);
+		break;
+	case AST_TYPE_POINTER:
+		printf(CLR_YELLOW "POINTER" CLR_END "\n");
+		print_type(src, type->pointer.inner, depth + 1);
+		break;
+	case AST_TYPE_ARRAY_DYN:
+		printf(CLR_YELLOW "ARRAY_DYN" CLR_END "\n");
+		print_type(src, type->array_dyn.inner, depth + 1);
+		break;
+	case AST_TYPE_ARRAY_FIXED:
+		printf(CLR_YELLOW "ARRAY_FIXED" CLR_END "\n");
+		print_tab(depth + 1);
+		printf(CLR_GREEN "TYPE" CLR_END "\n");
+		print_type(src, type->array_fixed.inner, depth + 2);
+		print_tab(depth + 1);
+		printf(CLR_GREEN "LENGTH" CLR_END "\n");
+		print_expr(src, type->array_fixed.length, depth + 2);
+		break;
+	default:
+		// TODO:
+		assert(0 && "Print for this type is not implemented");
+	}
+}
+
+static void print_struct_field(const char *src, const AstStructField *field, size_t depth) {
+	print_tab(depth);
+	printf(CLR_GREEN " FIELD" CLR_END "\n");
+	print_tab(depth + 1);
+	printf(CLR_GREEN "NAME " CLR_END);
+	print_ident(src, field->name);
+	printf("\n");
+	print_tab(depth + 1);
+	printf(CLR_GREEN "TYPE" CLR_END);
+	printf("\n");
+	print_type(src, field->type, depth + 2);
+}
+
+static void print_struct(const char *src, const AstStruct *struc, size_t depth) {
+	print_tab(depth);
+	printf(CLR_GREEN "STRUCT " CLR_END);
+	print_ident(src, struc->name);
+	printf("\n");
+	AstStructField *field = struc->fields;
+	while (field != NULL) {
+		print_struct_field(src, field, depth + 1);
+		field = field->next;
+	}
+}
+
+static void print_func_param(const char *src, const AstFunctionParam *param, size_t depth) {
+	print_tab(depth);
+	printf(CLR_GREEN "PARAM" CLR_END "\n");
+	print_tab(depth + 1);
+	printf(CLR_GREEN "NAME " CLR_END);
+	print_ident(src, param->name);
+	printf("\n");
+	print_tab(depth + 1);
+	printf(CLR_GREEN "TYPE" CLR_END "\n");
+	print_type(src, param->type, depth + 2);
+}
+
 static void print_func(const char *src, const AstFunction *func, size_t depth) {
 	print_tab(depth);
 	if (func->is_public) {
 		printf(CLR_CYAN "PUB " CLR_END);
 	}
-	printf(CLR_GREEN "FUNCTION " CLR_END);
+	printf(CLR_GREEN "FUNCTION" CLR_END "\n");
+	print_tab(depth + 1);
+	printf(CLR_GREEN "NAME " CLR_END);
 	print_ident(src, func->name);
-	printf(CLR_GREEN " RETURNS " CLR_END);
-	print_type(src, func->return_type);
 	printf("\n");
+	print_tab(depth + 1);
+	printf(CLR_GREEN "RETURNS" CLR_END "\n");
+	print_type(src, func->return_type, depth + 2);
 	AstFunctionParam *param = func->params;
 	while (param != NULL) {
 		print_func_param(src, param, depth + 1);
