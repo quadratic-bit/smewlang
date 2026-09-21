@@ -116,7 +116,10 @@ static AstStructField *parse_struct_field(Parser *parser) {
 
 // XXX: brittle
 static int is_item_start(TokenKind kind) {
-	return kind == TOK_KEY_FN || kind == TOK_KEY_STRUCT || kind == TOK_KEY_PUB;
+	return kind == TOK_KEY_FN     ||
+	       kind == TOK_KEY_STRUCT ||
+	       kind == TOK_KEY_PUB    ||
+	       kind == TOK_EOF;
 }
 
 static AstStruct *parse_def_struct(Parser *parser) {
@@ -135,7 +138,20 @@ static AstStruct *parse_def_struct(Parser *parser) {
 		}
 		struct_def->name = unknown_ident(parser);
 		if (parser->cur->kind != TOK_LBRACE) {
-			struct_def->span = span_span(struct_tok->span, parser->cur->span);
+			struct_def->span   = span_span(struct_tok->span, parser->cur->span);
+			struct_def->fields = NULL;
+			return struct_def;
+		}
+	}
+
+	if (parser->cur->kind != TOK_LBRACE) {
+		add_diag_expected(&parser->diags, parser->cur->span,
+		                  "Unexpected token in struct definition", "opening brace");
+		while (parser->cur->kind != TOK_LBRACE && !is_item_start(parser->cur->kind)) {
+			parser->cur++;
+		}
+		if (parser->cur->kind != TOK_LBRACE) {
+			struct_def->span   = span_span(struct_tok->span, parser->cur->span);
 			struct_def->fields = NULL;
 			return struct_def;
 		}
