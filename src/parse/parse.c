@@ -199,14 +199,21 @@ static AstBlock *parse_block(Parser *parser) {
 	consume(parser, TOK_LBRACE);
 
 	AstExpr *expr = parse_expr(parser, MIN_BP);
+	int changed = expr->span.len == 0;
 
 	while (parser->cur->kind != TOK_RBRACE && parser->cur->kind != TOK_EOF) {
-		// syntactic error -- recover by inserting a semicolon
+		// syntactic error -- recover by inserting a semicolon or advanvcing a cursor
 
-		add_diag_expected(&parser->diags, parser->cur->span,
-		                  "Unexpected token", "semicolon");
+		if (!changed) {
+			add_diag_expected(&parser->diags, parser->cur->span,
+					  "Unexpected token", "expression");
+			parser->cur++;
+		} else {
+			add_diag_expected(&parser->diags, parser->cur->span,
+					  "Unexpected token", "semicolon");
+		}
 
-		expr = parse_and_sequence(parser, expr);
+		changed = parse_and_sequence(parser, &expr);
 	}
 
 	block->body = expr;
