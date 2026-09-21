@@ -4,8 +4,33 @@
 #include <smew/colors.h>
 
 enum {
-	CONTINUATION_LIMIT = 128
+	PRINT_MAX_DEPTH = 128
 };
+
+typedef struct {
+	const char *src;
+	int has_next_sibling[PRINT_MAX_DEPTH];
+} AstPrinter;
+
+typedef struct {
+	AstPrinter *printer;
+	size_t      depth;
+} PrintCtx;
+
+static PrintCtx deep(PrintCtx old, short depth_delta) {
+	if (depth_delta < 0) {
+		size_t abs_delta = (size_t)(-depth_delta);
+		assert(old.depth >= abs_delta && "Negative depth");
+		return (PrintCtx){.printer = old.printer, .depth = old.depth - abs_delta};
+	}
+	// no assert, since I assume CONTINUATION_LIMIT << SIZE_MAX, so no overflow possible
+	return (PrintCtx){.printer = old.printer, .depth = old.depth + (size_t)depth_delta};
+}
+
+static void set_next_sibling(PrintCtx ctx, int has_next) {
+	assert(ctx.depth < PRINT_MAX_DEPTH && "Depth exceeded the limit");
+	ctx.printer->has_next_sibling[ctx.depth] = has_next;
+}
 
 static const char *binary_op_str(AstOpKindBinary kind) {
 	switch (kind) {
@@ -35,31 +60,33 @@ static const char *unary_op_str(AstOpKindUnary kind) {
 	}
 }
 
-static void print_tab(size_t depth, int cont[]) {
-	assert(depth < CONTINUATION_LIMIT && "Depth exceeded the limit");
+static void print_tab(PrintCtx ctx) {
+	assert(ctx.depth < PRINT_MAX_DEPTH && "Depth exceeded the limit");
 
-	if (depth == 0) return;
+	if (ctx.depth == 0) return;
 
-	for (size_t i = 0; i + 1 < depth; ++i) {
-		if (cont[i]) printf(CLR_BLUE "|" CLR_END "  ");
-		else         printf("   ");
+	for (size_t d = 0; d + 1 < ctx.depth; ++d) {
+		if (ctx.printer->has_next_sibling[d]) printf(CLR_BLUE "|" CLR_END "  ");
+		else                                  printf("   ");
 	}
 
 	printf(CLR_BLUE "|--" CLR_END);
 }
 
-static void print_ident(const char *src, const AstIdent *ident) {
+static void print_ident(PrintCtx ctx, const AstIdent *ident) {
 	if (ident->span.len == 0) {
 		printf(CLR_RED "<UNK>" CLR_END);
 	} else {
-		printf(CLR_MAGENTA "%.*s" CLR_END, (int)(ident->span.len), src + ident->span.start);
+		printf(CLR_MAGENTA "%.*s" CLR_END, (int)(ident->span.len),
+		       ctx.printer->src + ident->span.start);
 	}
 }
 
-static void print_literal(const char *src, const AstLiteral *lit) {
+static void print_literal(PrintCtx ctx, const AstLiteral *lit) {
 	switch (lit->kind) {
 	case AST_LITERAL_INT:
-		printf(CLR_YELLOW "int(%.*s)" CLR_END, (int)(lit->span.len), src + lit->span.start);
+		printf(CLR_YELLOW "int(%.*s)" CLR_END, (int)(lit->span.len),
+		       ctx.printer->src + lit->span.start);
 		break;
 	case AST_LITERAL_UNIT:
 		printf(CLR_YELLOW "unit" CLR_END);
@@ -70,58 +97,57 @@ static void print_literal(const char *src, const AstLiteral *lit) {
 	}
 }
 
-static void print_expr(const char *src, const AstExpr *expr, size_t depth, int cont[]) {
+static void print_expr(PrintCtx ctx, const AstExpr *expr) {
 	switch (expr->kind) {
 	case AST_EXPR_UNKNOWN:
-		print_tab(depth, cont);
-		printf(CLR_RED "<UNK>" CLR_END);
-		printf("\n");
+		print_tab(ctx);
+		printf(CLR_RED "<UNK>" CLR_END "\n");
 		break;
 
 	case AST_EXPR_IDENT:
-		print_tab(depth, cont);
+		print_tab(ctx);
 		printf(CLR_GREEN "IDENTIFIER " CLR_END);
-		print_ident(src, expr->ident);
-		printf("\n");
+		print_ident(ctx, expr->ident);
+		putchar('\n');
 		break;
 
 	case AST_EXPR_LITERAL:
-		print_tab(depth, cont);
+		print_tab(ctx);
 		printf(CLR_GREEN "LITERAL " CLR_END);
-		print_literal(src, expr->literal);
-		printf("\n");
+		print_literal(ctx, expr->literal);
+		putchar('\n');
 		break;
 
 	case AST_EXPR_OP_BINARY:
 		if (expr->op_binary->op == AST_OP_BINARY_SEQ) {
-			int sequence_has_next = cont[depth - 1];
+			int seq_has_next = ctx.printer->has_next_sibling[ctx.depth - 1];
 
-			cont[depth - 1] = 1;
-			print_expr(src, expr->op_binary->left,  depth, cont);
+			set_next_sibling(deep(ctx, -1), 1);
+			print_expr(ctx, expr->op_binary->left);
 
-			cont[depth - 1] = sequence_has_next;
-			print_expr(src, expr->op_binary->right, depth, cont);
+			set_next_sibling(deep(ctx, -1), seq_has_next);
+			print_expr(ctx, expr->op_binary->right);
 
 			break;
 		}
-		print_tab(depth, cont);
+		print_tab(ctx);
 
 		printf(CLR_GREEN "BINARY " CLR_YELLOW "%s" CLR_END "\n",
 		       binary_op_str(expr->op_binary->op));
 
-		cont[depth] = 1;
-		print_expr(src, expr->op_binary->left, depth + 1, cont);
+		set_next_sibling(ctx, 1);
+		print_expr(deep(ctx, +1), expr->op_binary->left);
 
-		cont[depth] = 0;
-		print_expr(src, expr->op_binary->right, depth + 1, cont);
+		set_next_sibling(ctx, 0);
+		print_expr(deep(ctx, +1), expr->op_binary->right);
 		break;
 
 	case AST_EXPR_OP_UNARY:
-		print_tab(depth, cont);
+		print_tab(ctx);
 		printf(CLR_GREEN "UNARY EXPR " CLR_YELLOW "%s" CLR_END "\n",
 		       unary_op_str(expr->op_unary->op));
 
-		print_expr(src, expr->op_unary->operand, depth + 1, cont);
+		print_expr(deep(ctx, +1), expr->op_unary->operand);
 		break;
 
 	default:
@@ -130,149 +156,177 @@ static void print_expr(const char *src, const AstExpr *expr, size_t depth, int c
 	}
 }
 
-static void print_type(const char *src, const AstType *type, size_t depth, int cont[]) {
-	print_tab(depth, cont);
+static void print_type(PrintCtx ctx, const AstType *type) {
+	print_tab(ctx);
 	switch (type->kind) {
 	case AST_TYPE_UNKNOWN:
 		printf(CLR_YELLOW "UNKNOWN" CLR_END "\n");
 		break;
+
 	case AST_TYPE_NAME:
-		print_ident(src, type->name.ident);
-		printf("\n");
+		print_ident(ctx, type->name.ident);
+		putchar('\n');
 		break;
+
 	case AST_TYPE_BORROW:
 		printf(CLR_YELLOW "BORROW" CLR_END "\n");
-		print_type(src, type->borrow.inner, depth + 1, cont);
+		print_type(deep(ctx, +1), type->borrow.inner);
 		break;
+
 	case AST_TYPE_BORROW_MUT:
 		printf(CLR_YELLOW "BORROW_MUT" CLR_END "\n");
-		print_type(src, type->borrow_mut.inner, depth + 1, cont);
+		print_type(deep(ctx, +1), type->borrow_mut.inner);
 		break;
+
 	case AST_TYPE_POINTER:
 		printf(CLR_YELLOW "POINTER" CLR_END "\n");
-		print_type(src, type->pointer.inner, depth + 1, cont);
+		print_type(deep(ctx, +1), type->pointer.inner);
 		break;
+
 	case AST_TYPE_ARRAY_DYN:
 		printf(CLR_YELLOW "ARRAY_DYN" CLR_END "\n");
-		print_type(src, type->array_dyn.inner, depth + 1, cont);
+		print_type(deep(ctx, +1), type->array_dyn.inner);
 		break;
+
 	case AST_TYPE_ARRAY_FIXED:
 		printf(CLR_YELLOW "ARRAY_FIXED" CLR_END "\n");
-		print_tab(depth + 1, cont);
+
+		print_tab(deep(ctx, +1));
 		printf(CLR_GREEN "TYPE" CLR_END "\n");
-		cont[depth] = 1;
-		print_type(src, type->array_fixed.inner, depth + 2, cont);
-		cont[depth] = 0;
-		print_tab(depth + 1, cont);
+
+		set_next_sibling(ctx, 1);
+		print_type(deep(ctx, +2), type->array_fixed.inner);
+		set_next_sibling(ctx, 0);
+
+		print_tab(deep(ctx, +1));
 		printf(CLR_GREEN "LENGTH" CLR_END "\n");
-		print_expr(src, type->array_fixed.length, depth + 2, cont);
+		print_expr(deep(ctx, +2), type->array_fixed.length);
 		break;
+
 	case AST_TYPE_GENERIC:
 		printf(CLR_YELLOW "GENERIC" CLR_END "\n");
-		print_tab(depth + 1, cont);
-		printf(CLR_GREEN "TYPE" CLR_END "\n");
-		cont[depth] = 1;
-		print_type(src, type->generic.base, depth + 2, cont);
-		cont[depth] = 0;
 
-		print_tab(depth + 1, cont);
+		print_tab(deep(ctx, +1));
+		printf(CLR_GREEN "TYPE" CLR_END "\n");
+
+		set_next_sibling(ctx, 1);
+		print_type(deep(ctx, +2), type->generic.base);
+		set_next_sibling(ctx, 0);
+
+		print_tab(deep(ctx, +1));
 		printf(CLR_GREEN "ARGS" CLR_END "\n");
-		cont[depth + 1] = 1;
+
+		set_next_sibling(deep(ctx, +1), 1);
+
 		AstTypeGeneric *cur = type->generic.args;
 		while (cur != NULL) {
 			if (cur->next == NULL) {
-				cont[depth + 1] = 0;
+				set_next_sibling(deep(ctx, +1), 0);
 			}
-			print_type(src, cur->arg, depth + 2, cont);
+			print_type(deep(ctx, +2), cur->arg);
 			cur = cur->next;
 		}
-		cont[depth + 1] = 0;
+
+		set_next_sibling(deep(ctx, +1), 0);
 		break;
 	}
 }
 
-static void print_struct_field(const char *src, const AstStructField *field, size_t depth, int cont[]) {
-	print_tab(depth, cont);
+static void print_struct_field(PrintCtx ctx, const AstStructField *field) {
+	print_tab(ctx);
 	printf(CLR_GREEN " FIELD" CLR_END "\n");
-	print_tab(depth + 1, cont);
+
+	print_tab(deep(ctx, +1));
 	printf(CLR_GREEN "NAME " CLR_END);
-	print_ident(src, field->name);
-	printf("\n");
-	print_tab(depth + 1, cont);
-	printf(CLR_GREEN "TYPE" CLR_END);
-	printf("\n");
-	print_type(src, field->type, depth + 2, cont);
+	print_ident(ctx, field->name);
+	putchar('\n');
+
+	print_tab(deep(ctx, +1));
+	printf(CLR_GREEN "TYPE" CLR_END "\n");
+	print_type(deep(ctx, +2), field->type);
 }
 
-static void print_struct(const char *src, const AstStruct *struc, size_t depth, int cont[]) {
-	print_tab(depth, cont);
+static void print_struct(PrintCtx ctx, const AstStruct *struc) {
+	print_tab(ctx);
 	printf(CLR_GREEN "STRUCT " CLR_END);
-	print_ident(src, struc->name);
-	printf("\n");
-	cont[depth] = 1;
+	print_ident(ctx, struc->name);
+	putchar('\n');
+
+	set_next_sibling(ctx, 1);
+
 	AstStructField *field = struc->fields;
 	while (field != NULL) {
 		if (field->next == NULL) {
-			cont[depth] = 0;
+			set_next_sibling(ctx, 0);
 		}
-		print_struct_field(src, field, depth + 1, cont);
+		print_struct_field(deep(ctx, +1), field);
 		field = field->next;
 	}
-	cont[depth] = 0;
+
+	set_next_sibling(ctx, 0);
 }
 
-static void print_func_param(const char *src, const AstFunctionParam *param, size_t depth, int cont[]) {
-	print_tab(depth, cont);
+static void print_func_param(PrintCtx ctx, const AstFunctionParam *param) {
+	print_tab(ctx);
 	printf(CLR_GREEN "PARAM" CLR_END "\n");
-	print_tab(depth + 1, cont);
+
+	print_tab(deep(ctx, +1));
 	printf(CLR_GREEN "NAME " CLR_END);
-	print_ident(src, param->name);
-	printf("\n");
-	print_tab(depth + 1, cont);
+	print_ident(ctx, param->name);
+	putchar('\n');
+
+	print_tab(deep(ctx, +1));
 	printf(CLR_GREEN "TYPE" CLR_END "\n");
-	print_type(src, param->type, depth + 2, cont);
+	print_type(deep(ctx, +2), param->type);
 }
 
-static void print_func(const char *src, const AstFunction *func, size_t depth, int cont[]) {
-	print_tab(depth, cont);
+static void print_func(PrintCtx ctx, const AstFunction *func) {
+	print_tab(ctx);
 	if (func->is_public) {
 		printf(CLR_CYAN "PUB " CLR_END);
 	}
 	printf(CLR_GREEN "FUNCTION" CLR_END "\n");
-	cont[depth] = 1;
-	print_tab(depth + 1, cont);
+
+	set_next_sibling(ctx, 1);
+
+	print_tab(deep(ctx, +1));
 	printf(CLR_GREEN "NAME " CLR_END);
-	print_ident(src, func->name);
-	printf("\n");
-	print_tab(depth + 1, cont);
+	print_ident(ctx, func->name);
+	putchar('\n');
+
+	print_tab(deep(ctx, +1));
 	printf(CLR_GREEN "RETURNS" CLR_END "\n");
-	print_type(src, func->return_type, depth + 2, cont);
+	print_type(deep(ctx, +2), func->return_type);
 	AstFunctionParam *param = func->params;
 	while (param != NULL) {
-		print_func_param(src, param, depth + 1, cont);
+		print_func_param(deep(ctx, +1), param);
 		param = param->next;
 	}
-	cont[depth] = 0;
-	print_tab(depth + 1, cont);
+
+	set_next_sibling(ctx, 0);
+
+	print_tab(deep(ctx, +1));
 	printf(CLR_GREEN "BLOCK" CLR_END "\n");
-	print_expr(src, func->block->body, depth + 2, cont);
+	print_expr(deep(ctx, +2), func->block->body);
 }
 
-static void print_item(const char *src, const AstItem *item, size_t depth, int cont[]) {
+static void print_item(PrintCtx ctx, const AstItem *item) {
 	switch (item->kind) {
 	case AST_ITEM_FUNCTION:
-		print_func(src, item->function, depth, cont);
+		print_func(ctx, item->function);
 		break;
 	case AST_ITEM_STRUCT:
-		print_struct(src, item->struc, depth, cont);
+		print_struct(ctx, item->struc);
 		break;
 	}
 }
 
 void print_ast(const char *src, const Ast *ast) {
-	int cont[CONTINUATION_LIMIT] = {0};
+	AstPrinter printer = {.has_next_sibling = {0},      .src   = src};
+	PrintCtx   ctx     = {.printer          = &printer, .depth = 0  };
+
 	for (size_t i = 0; i < ast->items.len; ++i) {
-		print_item(src, ast->items.data[i], 0, cont);
+		print_item(ctx, ast->items.data[i]);
 		printf("\n");
 	}
 }
