@@ -185,13 +185,16 @@ static AstStruct *parse_def_struct(Parser *parser) {
 static AstBlock *empty_block(Parser *parser) {
 	AstBlock *block = parser_alloc_one(parser, AstBlock);
 	block->span = zero_span();
-	block->body = NULL;
+	block->body = unit_expr(parser);
 	return block;
 }
 
-static AstBlock *consume_block(Parser *parser) {
+static AstBlock *parse_block(Parser *parser) {
+	assert(parser->cur->kind == TOK_LBRACE && "Blocks must start with opening brace");
+
 	const Token *block_start = parser->cur;
-	AstBlock *block = empty_block(parser);
+	AstBlock *block = parser_alloc_one(parser, AstBlock);
+	block->body = NULL;
 
 	consume(parser, TOK_LBRACE);
 
@@ -294,7 +297,20 @@ static AstFunction *parse_def_func(Parser *parser) {
 
 	func_def->return_type = parse_type(parser, MIN_BP);
 
-	func_def->block = consume_block(parser);
+	if (parser->cur->kind != TOK_LBRACE) {
+		add_diag_expected(&parser->diags, parser->cur->span,
+		                  "Unexpected token after function declaration", "opening brace");
+		while (parser->cur->kind != TOK_LBRACE && !is_item_start(parser->cur->kind)) {
+			parser->cur++;
+		}
+		if (parser->cur->kind != TOK_LBRACE) {
+			func_def->block = empty_block(parser);
+			func_def->span  = span_span(start_tok->span, parser->cur->span);
+			return func_def;
+		}
+	}
+
+	func_def->block = parse_block(parser);
 	func_def->span  = span_span(start_tok->span, func_def->block->span);
 
 	return func_def;

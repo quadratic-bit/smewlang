@@ -106,7 +106,7 @@ static AstOpKindBinary cast_tok_to_infix(TokenKind kind) {
 }
 
 // Synthesized unit (no source representation)
-static AstExpr *unit_expr(Parser *parser) {
+AstExpr *unit_expr(Parser *parser) {
 	AstExpr *expr = parser_alloc_one(parser, AstExpr);
 	expr->span = zero_span();
 	expr->kind = AST_EXPR_LITERAL;

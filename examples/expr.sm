@@ -1,0 +1,25 @@
+pub fn add(a: int32, b: int32) -> Result {
+    a + b * c;
+    a * b + c;
+    a - b - c;
+    a / b * c;
+
+    a = b = c;
+    a = b + c * d;
+
+    a + b == c * d;
+    a < b + c;
+    a + b >= c - d;
+
+    !a + b;
+    !a?;
+    !a.b?;
+    a.b.c;
+    a?.b.c?;
+
+    a = !b.c? + d * e;
+
+    a + b; c * d; e = f = g;
+
+    a = !b.c? + d * e == f; g = h.i?
+}
