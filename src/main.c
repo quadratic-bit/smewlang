@@ -42,21 +42,6 @@ int main(int argc, char **argv) {
 
 	Lexer lexer = lex(&source);
 
-	for (size_t i = 0; i < lexer.toks.len; ++i) {
-		Token tok = lexer.toks.data[i];
-		printf(CLR_GREEN "%s" CLR_END, token_kind_name(tok.kind));
-		if (tok.kind == TOK_IDENTIFIER  ||
-		    tok.kind == TOK_LITERAL_INT ||
-		    tok.kind == TOK_LITERAL_STRING)
-		{
-			printf("(" CLR_MAGENTA "%.*s" CLR_END ")",
-			       (int)tok.span.len, lexer.src->buf.data + tok.span.start);
-		}
-		putchar('\n');
-	}
-
-	putchar('\n');
-
 	for (size_t i = 0; i < lexer.diags.len; ++i) {
 		Diag *diag = &lexer.diags.data[i];
 		print_diag(&source, diag);

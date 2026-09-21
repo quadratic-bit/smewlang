@@ -173,23 +173,6 @@ static AstBlock *empty_block(Parser *parser) {
 	return block;
 }
 
-static AstFunctionParam *consume_func_params(Parser *parser) {
-	AstFunctionParam *param = parser_alloc_one(parser, AstFunctionParam);
-	param->next = NULL;
-	param->name = consume_ident(parser);
-	consume(parser, TOK_COLON);
-	param->type = parse_type(parser, MIN_BP);
-	param->span = span_span(param->name->span, param->type->span);
-
-	if (parser->cur->kind == TOK_COMMA) {
-		consume(parser, TOK_COMMA);
-		AstFunctionParam *next_param = consume_func_params(parser);
-		param->next = next_param;
-	}
-
-	return param;
-}
-
 static AstBlock *consume_block(Parser *parser) {
 	const Token *block_start = parser->cur;
 	AstBlock *block = empty_block(parser);
@@ -218,8 +201,33 @@ static AstBlock *consume_block(Parser *parser) {
 	return block;
 }
 
-// TODO: recovery
-static AstFunction *consume_def_func(Parser *parser) {
+static AstFunctionParam *parse_func_params(Parser *parser) {
+	AstFunctionParam *param = parser_alloc_one(parser, AstFunctionParam);
+	param->next = NULL;
+
+	if (parser->cur->kind == TOK_IDENTIFIER) {
+		param->name = consume_ident(parser);
+	} else {
+		add_diag_expected(&parser->diags, parser->cur->span,
+		                  "Unexpected token", "identifier");
+		param->name = unknown_ident(parser);
+	}
+
+	consume_or_insert(parser, TOK_COLON, "colon");
+
+	param->type = parse_type(parser, MIN_BP);
+	param->span = span_span(param->name->span, param->type->span);
+
+	if (parser->cur->kind == TOK_COMMA) {
+		consume(parser, TOK_COMMA);
+		AstFunctionParam *next_param = parse_func_params(parser);
+		param->next = next_param;
+	}
+
+	return param;
+}
+
+static AstFunction *parse_def_func(Parser *parser) {
 	assert((parser->cur->kind == TOK_KEY_PUB ||
 	        parser->cur->kind == TOK_KEY_FN) && "Function must start with `fn` or `pub");
 
@@ -227,25 +235,51 @@ static AstFunction *consume_def_func(Parser *parser) {
 
 	AstFunction *func_def = parser_alloc_one(parser, AstFunction);
 	func_def->params = NULL;
-	func_def->block  = empty_block(parser);
 
 	func_def->is_public = consume_maybe(parser, TOK_KEY_PUB);
 	consume_or_insert(parser, TOK_KEY_FN, "`fn` keyword");
 
-	func_def->name = consume_ident(parser);
+	if (parser->cur->kind == TOK_IDENTIFIER) {
+		func_def->name = consume_ident(parser);
+	} else {
+		add_diag_expected(&parser->diags, parser->cur->span,
+		                  "Unexpected token", "identifier");
 
-	consume(parser, TOK_LPAREN);
-	if (parser->cur->kind != TOK_RPAREN) {
-		func_def->params = consume_func_params(parser);
+		func_def->name = unknown_ident(parser);
+
+		while (parser->cur->kind != TOK_LPAREN &&
+		       parser->cur->kind != TOK_LBRACE &&
+		       parser->cur->kind != TOK_EOF) {
+			parser->cur++;
+		}
+
+		if (guard_eof(parser)) {
+			func_def->span        = span_span(start_tok->span, prev(parser)->span);
+			func_def->block       = empty_block  (parser);
+			func_def->return_type = unknown_type (parser);
+			return func_def;
+		}
 	}
-	consume(parser, TOK_RPAREN);
 
-	consume(parser, TOK_ARROW);
+	if (parser->cur->kind == TOK_LPAREN) {
+		consume(parser, TOK_LPAREN);
+
+		if (parser->cur->kind != TOK_RPAREN) {
+			func_def->params = parse_func_params(parser);
+		}
+
+		consume_or_insert(parser, TOK_RPAREN, "closing parenthesis");
+	} else {
+		add_diag_expected(&parser->diags, parser->cur->span,
+		                  "Unexpected token", "opening parenthesis (function params)");
+	}
+
+	consume_or_insert(parser, TOK_ARROW, "arrow");
 
 	func_def->return_type = parse_type(parser, MIN_BP);
 
 	func_def->block = consume_block(parser);
-	func_def->span = span_span(start_tok->span, func_def->block->span);
+	func_def->span  = span_span(start_tok->span, func_def->block->span);
 
 	return func_def;
 }
@@ -257,16 +291,18 @@ static AstItem *parse_item(Parser *parser) {
 
 	switch (starting_token->kind) {
 	case TOK_KEY_STRUCT:
-		item->kind = AST_ITEM_STRUCT;
+		item->kind  = AST_ITEM_STRUCT;
 		item->struc = parse_def_struct(parser);
-		item->span = item->struc->span;
+		item->span  = item->struc->span;
 		break;
+
 	case TOK_KEY_PUB:
 	case TOK_KEY_FN:
-		item->kind = AST_ITEM_FUNCTION;
-		item->function = consume_def_func(parser);
-		item->span = item->function->span;
+		item->kind     = AST_ITEM_FUNCTION;
+		item->function = parse_def_func(parser);
+		item->span     = item->function->span;
 		break;
+
 	default:
 		assert(0 && "Unimplemented item");
 	}
