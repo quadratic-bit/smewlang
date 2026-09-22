@@ -150,6 +150,29 @@ static void print_expr(PrintCtx ctx, const AstExpr *expr) {
 		print_expr(deep(ctx, +1), expr->op_unary->operand);
 		break;
 
+	case AST_EXPR_IF:
+		print_tab(ctx);
+		printf(CLR_GREEN "BRANCH" CLR_END "\n");
+
+		AstCondBlock *cur = expr->branch->conds;
+		set_next_sibling(ctx, 1);
+
+		while (cur != NULL) {
+			print_tab(deep(ctx, +1));
+			printf(CLR_GREEN "COND IF" CLR_END "\n");
+			print_expr(deep(ctx, +2), cur->cond);
+
+			if (cur->next == NULL) {
+				set_next_sibling(ctx, 0);
+			}
+
+			print_tab(deep(ctx, +1));
+			printf(CLR_GREEN "BLOCK" CLR_END "\n");
+			print_expr(deep(ctx, +2), cur->block->body);
+			cur = cur->next;
+		}
+		break;
+
 	default:
 		// TODO:
 		assert(0 && "Print for this expression type is not implemented");

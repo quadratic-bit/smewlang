@@ -1,4 +1,12 @@
 pub fn add(a: int32, b: int32) -> Result {
     a + b * c;
     a * b + c;
+
+    if a < b {
+        case_if
+    } else if a < 2 {
+        case_else_if
+    } else {
+        a = 2 + 3;
+    };
 }

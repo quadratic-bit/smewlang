@@ -1,5 +1,9 @@
 #include "expr.h"
 #include "parse.h"
+#include "block.h"
+#include "smew/diag.h"
+#include "smew/lex.h"
+#include "smew/source.h"
 
 #include <smew/parse.h>
 #include <smew/ast.h>
@@ -119,6 +123,84 @@ AstExpr *unit_expr(Parser *parser) {
 	return expr;
 }
 
+static AstCondBlock *parse_cond_block(Parser *parser, int is_else) {
+	const Token *start = parser->cur;
+
+	AstCondBlock *cond_block = parser_alloc_one(parser, AstCondBlock);
+	cond_block->next = NULL;
+
+	if (is_else) {
+		cond_block->cond = unit_expr(parser);
+	} else {
+		cond_block->cond = parse_expr(parser, MIN_BP);
+
+		if (cond_block->cond->span.len == 0) {
+			add_diag_expected(&parser->diags, parser->cur->span,
+			                 "Unexpected token in branch condition", "expression");
+		}
+	}
+
+	if (parser->cur->kind != TOK_LBRACE) {
+		add_diag_expected(&parser->diags, parser->cur->span,
+		                  "Unexpected token after branch condition", "opening brace");
+
+		while (parser->cur->kind != TOK_LBRACE &&
+		       parser->cur->kind != TOK_RBRACE &&
+		       parser->cur->kind != TOK_EOF)
+		{
+			parser->cur++;
+		}
+
+		if (parser->cur->kind != TOK_LBRACE) {
+			cond_block->block = empty_block(parser);
+			cond_block->span  = span_span(start->span, parser->cur->span);
+			return cond_block;
+		}
+	}
+
+	cond_block->block = parse_block(parser);
+	cond_block->span  = span_span(start->span, cond_block->block->span);
+
+	return cond_block;
+}
+
+static AstBranch *parse_branch(Parser *parser) {
+	assert(parser->cur->kind == TOK_KEY_IF && "Unexpected token kind");
+
+	const Token *if_tok = parser->cur;
+	consume(parser, TOK_KEY_IF);
+
+	AstBranch *br = parser_alloc_one(parser, AstBranch);
+	br->conds = NULL;
+
+	AstCondBlock **tail = &br->conds;
+
+	AstCondBlock *cond_block = parse_cond_block(parser, 0);
+	*tail = cond_block;
+	tail = &cond_block->next;
+
+	while (parser->cur->kind == TOK_KEY_ELSE) {
+		consume(parser, TOK_KEY_ELSE);
+
+		int is_else;
+
+		if (parser->cur->kind == TOK_KEY_IF) {
+			consume(parser, TOK_KEY_IF);
+			is_else = 0;
+		} else {
+			is_else = 1;
+		}
+
+		cond_block = parse_cond_block(parser, is_else);
+
+		*tail = cond_block;
+		tail = &cond_block->next;
+	}
+
+	br->span = span_span(if_tok->span, cond_block->span);
+	return br;
+}
+
 static AstExpr *parse_expr_prefix(Parser *parser) {
 	const Token *cur_tok = parser->cur;
 
@@ -147,6 +229,17 @@ static AstExpr *parse_expr_prefix(Parser *parser) {
 		base_expr->kind    = AST_EXPR_LITERAL;
 		base_expr->literal = lit;
 		base_expr->span    = lit->span;
+
+		return base_expr;
+	}
+
+	if (cur_tok->kind == TOK_KEY_IF) {
+		AstBranch *br        = parse_branch(parser);
+		AstExpr   *base_expr = parser_alloc_one(parser, AstExpr);
+
+		base_expr->kind   = AST_EXPR_IF;
+		base_expr->branch = br;
+		base_expr->span   = br->span;
 
 		return base_expr;
 	}
