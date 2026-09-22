@@ -5,9 +5,7 @@
 #include <smew/ast.h>
 #include <smew/diag.h>
 #include <smew/lex.h>
-#include <smew/vec.h>
-
-#include <stdint.h>
+#include <smew/source.h>
 
 typedef struct {
 	const SourceFile *src;

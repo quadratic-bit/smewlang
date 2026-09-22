@@ -4,7 +4,6 @@
 #include <smew/vec.h>
 
 #include <stdio.h>
-#include <stddef.h>
 
 typedef enum {BUF_OK, BUF_ERR} BufResult;
 

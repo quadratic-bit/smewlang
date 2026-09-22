@@ -1,7 +1,9 @@
-#include <assert.h>
 #include <smew/ast.h>
 
 #include <smew/colors.h>
+
+#include <assert.h>
+#include <stdio.h>
 
 enum {
 	PRINT_MAX_DEPTH = 128

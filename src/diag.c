@@ -1,7 +1,11 @@
 #include <smew/diag.h>
 
 #include <smew/colors.h>
+#include <smew/source.h>
 #include <smew/vec.h>
+
+#include <stdio.h>
+#include <stdlib.h>
 
 void add_diag(Diags *diags, Span span, const char *message) {
 	Diag diag = (Diag){

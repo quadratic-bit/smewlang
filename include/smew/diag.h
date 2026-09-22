@@ -2,6 +2,7 @@
 #define DIAG_H
 
 #include <smew/source.h>
+#include <smew/vec.h>
 
 typedef struct {
 	Span span;

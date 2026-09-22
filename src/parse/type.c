@@ -1,11 +1,17 @@
-#include "expr.h"
 #include "type.h"
+
+#include "expr.h"
 #include "parse.h"
 
 #include <smew/ast.h>
+#include <smew/diag.h>
+#include <smew/lex.h>
 #include <smew/parse.h>
+#include <smew/source.h>
 
 #include <assert.h>
+#include <stddef.h>
+
 
 static BindingPower get_type_bp(TokenKind kind) {
 	switch (kind) {

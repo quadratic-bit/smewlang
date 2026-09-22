@@ -5,15 +5,13 @@
 #include "type.h"
 
 #include <smew/arena.h>
-#include <smew/colors.h>
+#include <smew/ast.h>
 #include <smew/diag.h>
 #include <smew/lex.h>
 #include <smew/source.h>
 #include <smew/vec.h>
 
 #include <assert.h>
-#include <stdalign.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 

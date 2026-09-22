@@ -1,6 +1,6 @@
 #include <smew/arena.h>
+#include <smew/diag.h>
 #include <smew/ast.h>
-#include <smew/colors.h>
 #include <smew/lex.h>
 #include <smew/parse.h>
 #include <smew/source.h>

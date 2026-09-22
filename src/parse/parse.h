@@ -1,11 +1,15 @@
 #ifndef PARSE_PARSE_H
 #define PARSE_PARSE_H
 
+#include <smew/ast.h>
 #include <smew/arena.h>
+#include <smew/lex.h>
 #include <smew/parse.h>
 
 #include <stdalign.h>
 #include <stddef.h>
+#include <stdint.h>
+
 
 static const uint8_t MIN_BP = 0;
 static const uint8_t NO_BP  = MIN_BP;

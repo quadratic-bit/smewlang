@@ -1,13 +1,11 @@
 #include <smew/lex.h>
 
-#include <smew/colors.h>
 #include <smew/diag.h>
 #include <smew/source.h>
 #include <smew/vec.h>
 
 #include <assert.h>
 #include <ctype.h>
-#include <stdio.h>
 #include <string.h>
 
 typedef enum {

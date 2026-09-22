@@ -1,14 +1,16 @@
 #include "expr.h"
-#include "parse.h"
-#include "block.h"
-#include "smew/diag.h"
-#include "smew/lex.h"
-#include "smew/source.h"
 
-#include <smew/parse.h>
+#include "block.h"
+#include "parse.h"
+
 #include <smew/ast.h>
+#include <smew/diag.h>
+#include <smew/lex.h>
+#include <smew/parse.h>
+#include <smew/source.h>
 
 #include <assert.h>
+#include <stddef.h>
 
 static AstLiteral *consume_literal_int(Parser *parser) {
 	assert(parser->cur->kind == TOK_LITERAL_INT && "Unexpected token kind");
@@ -123,6 +125,10 @@ AstExpr *unit_expr(Parser *parser) {
 	return expr;
 }
 
+int is_s_unit(AstExpr *expr) {
+	return expr->span.len == 0;
+}
+
 static AstCondBlock *parse_cond_block(Parser *parser, int is_else) {
 	const Token *start = parser->cur;
 
@@ -134,7 +140,7 @@ static AstCondBlock *parse_cond_block(Parser *parser, int is_else) {
 	} else {
 		cond_block->cond = parse_expr(parser, MIN_BP);
 
-		if (cond_block->cond->span.len == 0) {
+		if (is_s_unit(cond_block->cond)) {
 			add_diag_expected(&parser->diags, parser->cur->span,
 			                 "Unexpected token in branch condition", "expression");
 		}
@@ -328,7 +334,7 @@ AstExpr *parse_expr(Parser *parser, uint8_t min_bp) {
 
 int parse_and_sequence(Parser *parser, AstExpr **base) {
 	AstExpr *right = parse_expr(parser, MIN_BP);
-	if (right->span.len == 0) return 0;
+	if (is_s_unit(right)) return 0;
 
 	AstOpBinary *seq = parser_alloc_one(parser, AstOpBinary);
 	seq->op    = AST_OP_BINARY_SEQ;

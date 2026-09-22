@@ -1,4 +1,5 @@
 #include "block.h"
+
 #include "expr.h"
 #include "parse.h"
 
@@ -21,7 +22,7 @@ AstBlock *parse_block(Parser *parser) {
 	consume(parser, TOK_LBRACE);
 
 	AstExpr *expr = parse_expr(parser, MIN_BP);
-	int changed = expr->span.len == 0;
+	int changed = is_s_unit(expr);
 
 	while (parser->cur->kind != TOK_RBRACE && parser->cur->kind != TOK_EOF) {
 		// syntactic error -- recover by inserting a semicolon or advanvcing a cursor
