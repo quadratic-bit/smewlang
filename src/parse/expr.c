@@ -111,6 +111,14 @@ static AstOpKindBinary cast_tok_to_infix(TokenKind kind) {
 	}
 }
 
+AstExpr *unknown_expr(Parser *parser) {
+	AstExpr *expr = parser_alloc_one(parser, AstExpr);
+	expr->span = parser->cur->span;
+	expr->kind = AST_EXPR_UNKNOWN;
+
+	return expr;
+}
+
 // Synthesized unit (no source representation)
 AstExpr *unit_expr(Parser *parser) {
 	AstExpr *expr = parser_alloc_one(parser, AstExpr);
@@ -125,10 +133,6 @@ AstExpr *unit_expr(Parser *parser) {
 	return expr;
 }
 
-int is_s_unit(AstExpr *expr) {
-	return expr->span.len == 0;
-}
-
 static AstCondBlock *parse_cond_block(Parser *parser, int is_else) {
 	const Token *start = parser->cur;
 
@@ -140,9 +144,10 @@ static AstCondBlock *parse_cond_block(Parser *parser, int is_else) {
 	} else {
 		cond_block->cond = parse_expr(parser, MIN_BP);
 
-		if (is_s_unit(cond_block->cond)) {
+		if (cond_block->cond == NULL) {
 			add_diag_expected(&parser->diags, parser->cur->span,
 			                 "Unexpected token in branch condition", "expression");
+			cond_block->cond = unknown_expr(parser);
 		}
 	}
 
@@ -305,10 +310,24 @@ static AstExpr *parse_expr_infix(Parser *parser, AstExpr *base, uint8_t min_bp) 
 	AstExpr     *operand = parse_expr(parser, bp.right);
 	AstOpBinary *binary  = parser_alloc_one(parser, AstOpBinary);
 
-	binary->span  = span_span(base->span, operand->span);
-	binary->op    = cast_tok_to_infix(op->kind);
-	binary->left  = base;
-	binary->right = operand;
+	AstOpKindBinary binary_op = cast_tok_to_infix(op->kind);
+
+	if (operand == NULL) {
+		if (binary_op == AST_OP_BINARY_SEQ) {
+			binary->right = unit_expr(parser);
+		} else {
+			add_diag_expected(&parser->diags, parser->cur->span,
+			                  "Unexpected token in binary expression", "rhs");
+			binary->right = unknown_expr(parser);
+		}
+		binary->span  = span_span(base->span, op->span);
+	} else {
+		binary->span  = span_span(base->span, operand->span);
+		binary->right = operand;
+	}
+
+	binary->op   = binary_op;
+	binary->left = base;
 
 	new_base->op_binary = binary;
 	new_base->span      = binary->span;
@@ -316,11 +335,12 @@ static AstExpr *parse_expr_infix(Parser *parser, AstExpr *base, uint8_t min_bp) 
 	return new_base;
 }
 
+// Returns a valid AstExpr* on success, AST_EXPR_UNKNOWN expr on error, and NULL on abscence of expr
 AstExpr *parse_expr(Parser *parser, uint8_t min_bp) {
 	AstExpr *base = parse_expr_prefix(parser);
 
 	if (base == NULL) {
-		return unit_expr(parser);
+		return NULL;
 	}
 
 	while (1) {
@@ -334,11 +354,18 @@ AstExpr *parse_expr(Parser *parser, uint8_t min_bp) {
 
 int parse_and_sequence(Parser *parser, AstExpr **base) {
 	AstExpr *right = parse_expr(parser, MIN_BP);
-	if (is_s_unit(right)) return 0;
+	if (right == NULL) return 0;
 
 	AstOpBinary *seq = parser_alloc_one(parser, AstOpBinary);
-	seq->op    = AST_OP_BINARY_SEQ;
-	seq->span  = span_span((*base)->span, right->span);
+	seq->op = AST_OP_BINARY_SEQ;
+
+	if (*base == NULL) {
+		*base = unit_expr(parser);
+		seq->span = right->span;
+	} else {
+		seq->span = span_span((*base)->span, right->span);
+	}
+
 	seq->left  = *base;
 	seq->right = right;
 

@@ -22,7 +22,7 @@ AstBlock *parse_block(Parser *parser) {
 	consume(parser, TOK_LBRACE);
 
 	AstExpr *expr = parse_expr(parser, MIN_BP);
-	int changed = is_s_unit(expr);
+	int changed = expr == NULL;
 
 	while (parser->cur->kind != TOK_RBRACE && parser->cur->kind != TOK_EOF) {
 		// syntactic error -- recover by inserting a semicolon or advanvcing a cursor
@@ -39,6 +39,9 @@ AstBlock *parse_block(Parser *parser) {
 		changed = parse_and_sequence(parser, &expr);
 	}
 
+	if (expr == NULL) {
+		expr = unknown_expr(parser);
+	}
 	block->body = expr;
 
 	if (!guard_eof(parser)) {
