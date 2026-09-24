@@ -160,6 +160,12 @@ static void print_expr(PrintCtx ctx, const AstExpr *expr) {
 		print_expr(deep(ctx, +1), expr->loop->body->body);
 		break;
 
+	case AST_EXPR_BREAK:
+		print_tab(ctx);
+		printf(CLR_GREEN "BREAK" CLR_END "\n");
+
+		break;
+
 	case AST_EXPR_IF:
 		print_tab(ctx);
 		printf(CLR_GREEN "BRANCH" CLR_END "\n");

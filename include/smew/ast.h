@@ -183,7 +183,7 @@ typedef enum {
 	AST_EXPR_INDEX,
 	AST_EXPR_BIND,
 	AST_EXPR_WITH,
-	AST_EXPR_BREAK,
+	AST_EXPR_BREAK,      // done
 	AST_EXPR_LITERAL,    // done
 	AST_EXPR_IDENT,      // done
 } AstExprKind;

@@ -25,6 +25,7 @@ const char *token_kind_name(TokenKind kind) {
 	case TOK_KEY_WITH:       return "KEYWORD:WITH";
 	case TOK_KEY_MUT:        return "KEYWORD:MUT";
 	case TOK_KEY_LOOP:       return "KEYWORD:LOOP";
+	case TOK_KEY_BREAK:      return "KEYWORD:BREAK";
 	case TOK_KEY_IF:         return "KEYWORD:IF";
 	case TOK_KEY_ELSE:       return "KEYWORD:ELSE";
 	case TOK_KEY_STRUCT:     return "KEYWORD:STRUCT";
@@ -200,6 +201,7 @@ static TokenKind try_keyword_cast(const Lexer *lexer, size_t start) {
 	if (compare_span(tok, tok_len, "with"  )) return TOK_KEY_WITH;
 	if (compare_span(tok, tok_len, "mut"   )) return TOK_KEY_MUT;
 	if (compare_span(tok, tok_len, "loop"  )) return TOK_KEY_LOOP;
+	if (compare_span(tok, tok_len, "break" )) return TOK_KEY_BREAK;
 	if (compare_span(tok, tok_len, "if"    )) return TOK_KEY_IF;
 	if (compare_span(tok, tok_len, "else"  )) return TOK_KEY_ELSE;
 	if (compare_span(tok, tok_len, "let"   )) return TOK_KEY_LET;

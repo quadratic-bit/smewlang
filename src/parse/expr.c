@@ -301,6 +301,20 @@ static AstExpr *parse_expr_prefix(Parser *parser) {
 		return base_expr;
 	}
 
+	if (cur_tok->kind == TOK_KEY_BREAK) {
+		AstBreak *brk       = parser_alloc_one(parser, AstBreak);
+		AstExpr  *base_expr = parser_alloc_one(parser, AstExpr);
+
+		brk->span       = cur_tok->span;
+		base_expr->kind = AST_EXPR_BREAK;
+		base_expr->brk  = brk;
+		base_expr->span = brk->span;
+
+		consume(parser, TOK_KEY_BREAK);
+
+		return base_expr;
+	}
+
 	uint8_t bp = get_expr_prefix_bp(cur_tok->kind);
 
 	if (!is_prefix_op(bp)) {
