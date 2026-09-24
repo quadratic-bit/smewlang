@@ -66,6 +66,7 @@ static BindingPower get_expr_infix_bp(TokenKind kind) {
 	case TOK_STAR:      return (BindingPower){.left = 12, .right = 13   };
 
 	case TOK_QUESTION:  return (BindingPower){.left = 15, .right = NO_BP};
+	case TOK_LBRACKET:  return (BindingPower){.left = 15, .right = 15   };
 
 	case TOK_DOT:       return (BindingPower){.left = 16, .right = 17   };
 
@@ -369,7 +370,32 @@ static AstExpr *parse_expr_infix(Parser *parser, AstExpr *base, uint8_t min_bp) 
 	}
 
 	AstExpr *new_base = parser_alloc_one(parser, AstExpr);
-	new_base->kind    = AST_EXPR_OP_BINARY;
+
+
+	if (op->kind == TOK_LBRACKET) {
+		new_base->kind = AST_EXPR_INDEX;
+
+		AstExpr  *operand = parse_expr(parser, MIN_BP);
+		AstIndex *index   = parser_alloc_one(parser, AstIndex);
+		index->index = operand;
+
+		if (operand == NULL) {
+			operand = unit_expr(parser);
+		}
+
+		index->index = operand;
+		index->base  = base;
+
+		consume_or_insert(parser, TOK_RBRACKET, "closing bracket");
+
+		index->span     = span_span(base->span, parser->cur->span);
+		new_base->index = index;
+		new_base->span  = index->span;
+		return new_base;
+	}
+
+
+	new_base->kind = AST_EXPR_OP_BINARY;
 
 	AstExpr     *operand = parse_expr(parser, bp.right);
 	AstOpBinary *binary  = parser_alloc_one(parser, AstOpBinary);

@@ -163,7 +163,25 @@ static void print_expr(PrintCtx ctx, const AstExpr *expr) {
 	case AST_EXPR_BREAK:
 		print_tab(ctx);
 		printf(CLR_GREEN "BREAK" CLR_END "\n");
+		break;
 
+	case AST_EXPR_INDEX:
+		print_tab(ctx);
+		printf(CLR_GREEN "INDEX" CLR_END "\n");
+
+		print_tab(deep(ctx, +1));
+		printf(CLR_GREEN "BASE" CLR_END "\n");
+
+		set_next_sibling(ctx, 1);
+
+		print_expr(deep(ctx, +2), expr->index->base);
+
+		set_next_sibling(ctx, 0);
+
+		print_tab(deep(ctx, +1));
+		printf(CLR_GREEN "VALUE" CLR_END "\n");
+
+		print_expr(deep(ctx, +2), expr->index->index);
 		break;
 
 	case AST_EXPR_IF:
