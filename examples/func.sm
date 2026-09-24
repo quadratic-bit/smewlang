@@ -8,9 +8,11 @@ pub fn add(a: int32, b: int32) -> Result {
         case_else_if
     } else {
         a = 2 + 3;
+        return
     };
 
     loop {
         a = a + 2;
-    }
+    };
+    return 2
 }

@@ -38,7 +38,8 @@ static int is_infix_op(BindingPower bp) {
 
 static uint8_t get_expr_prefix_bp(TokenKind kind) {
 	switch (kind) {
-	case TOK_BANG: return 13;
+	case TOK_BANG:       return 14;
+	case TOK_KEY_RETURN: return 3;
 	default:
 		return NO_BP;
 	}
@@ -48,25 +49,25 @@ static BindingPower get_expr_infix_bp(TokenKind kind) {
 	switch (kind) {
 	case TOK_SEMICOLON: return (BindingPower){.left = 1,  .right = 2    };
 
-	case TOK_ASSIGN:    return (BindingPower){.left = 4,  .right = 3    };
+	case TOK_ASSIGN:    return (BindingPower){.left = 5,  .right = 4    };
 
-	case TOK_EQUAL:     return (BindingPower){.left = 5,  .right = 6    };
-	case TOK_NOT_EQUAL: return (BindingPower){.left = 5,  .right = 6    };
+	case TOK_EQUAL:     return (BindingPower){.left = 6,  .right = 7    };
+	case TOK_NOT_EQUAL: return (BindingPower){.left = 6,  .right = 7    };
 
-	case TOK_GE:        return (BindingPower){.left = 7,  .right = 8    };
-	case TOK_GT:        return (BindingPower){.left = 7,  .right = 8    };
-	case TOK_LE:        return (BindingPower){.left = 7,  .right = 8    };
-	case TOK_LT:        return (BindingPower){.left = 7,  .right = 8    };
+	case TOK_GE:        return (BindingPower){.left = 8,  .right = 9    };
+	case TOK_GT:        return (BindingPower){.left = 8,  .right = 9    };
+	case TOK_LE:        return (BindingPower){.left = 8,  .right = 9    };
+	case TOK_LT:        return (BindingPower){.left = 8,  .right = 9    };
 
-	case TOK_PLUS:      return (BindingPower){.left = 9,  .right = 10   };
-	case TOK_MINUS:     return (BindingPower){.left = 9,  .right = 10   };
+	case TOK_PLUS:      return (BindingPower){.left = 10, .right = 11   };
+	case TOK_MINUS:     return (BindingPower){.left = 10, .right = 11   };
 
-	case TOK_SLASH:     return (BindingPower){.left = 11, .right = 12   };
-	case TOK_STAR:      return (BindingPower){.left = 11, .right = 12   };
+	case TOK_SLASH:     return (BindingPower){.left = 12, .right = 13   };
+	case TOK_STAR:      return (BindingPower){.left = 12, .right = 13   };
 
-	case TOK_QUESTION:  return (BindingPower){.left = 14, .right = NO_BP};
+	case TOK_QUESTION:  return (BindingPower){.left = 15, .right = NO_BP};
 
-	case TOK_DOT:       return (BindingPower){.left = 15, .right = 16   };
+	case TOK_DOT:       return (BindingPower){.left = 16, .right = 17   };
 
 	default:
 		return (BindingPower){.left = NO_BP, .right = NO_BP};
@@ -77,6 +78,8 @@ static AstOpKindUnary cast_tok_to_prefix(TokenKind kind) {
 	switch (kind) {
 	case TOK_BANG:
 		return AST_OP_UNARY_NOT;
+	case TOK_KEY_RETURN:
+		return AST_OP_UNARY_RETURN;
 	default:
 		assert(0 && "Invalid prefix cast");
 	}
@@ -309,6 +312,10 @@ static AstExpr *parse_expr_prefix(Parser *parser) {
 
 	AstExpr *operand   = parse_expr(parser, bp);
 	AstExpr *base_expr = parser_alloc_one(parser, AstExpr);
+
+	if (operand == NULL) {
+		operand = unit_expr(parser);
+	}
 
 	base_expr->kind = AST_EXPR_OP_UNARY;
 

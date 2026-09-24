@@ -95,6 +95,7 @@ typedef enum {
 typedef enum {
 	AST_OP_UNARY_NOT,
 	AST_OP_UNARY_MOVE,
+	AST_OP_UNARY_RETURN,
 	AST_OP_UNARY_BORROW,
 	AST_OP_UNARY_DEREF,
 	AST_OP_UNARY_UNWRAP,
@@ -151,12 +152,6 @@ typedef struct {
 
 typedef struct {
 	Span span;
-	AstExpr  *base;
-	AstIdent *field;
-} AstMember;
-
-typedef struct {
-	Span span;
 	AstExpr *base;
 	AstExpr *index;
 } AstIndex;
@@ -176,11 +171,6 @@ typedef struct {
 
 typedef struct {
 	Span span;
-	AstExpr *returnee;
-} AstReturn;
-
-typedef struct {
-	Span span;
 } AstBreak;
 
 typedef enum {
@@ -190,11 +180,9 @@ typedef enum {
 	AST_EXPR_OP_BINARY,  // done
 	AST_EXPR_OP_UNARY,   // done
 	AST_EXPR_CALL,
-	AST_EXPR_MEMBER,
 	AST_EXPR_INDEX,
 	AST_EXPR_BIND,
 	AST_EXPR_WITH,
-	AST_EXPR_RETURN,
 	AST_EXPR_BREAK,
 	AST_EXPR_LITERAL,    // done
 	AST_EXPR_IDENT,      // done
@@ -210,11 +198,9 @@ struct AstExpr {
 		AstOpBinary *op_binary;
 		AstOpUnary  *op_unary;
 		AstCall     *call;
-		AstMember   *member;
 		AstBind     *bind;
 		AstIndex    *index;
 		AstWith     *with;
-		AstReturn   *ret;
 		AstBreak    *brk;
 		AstLiteral  *literal;
 		AstIdent    *ident;

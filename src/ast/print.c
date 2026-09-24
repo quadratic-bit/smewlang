@@ -59,6 +59,7 @@ static const char *unary_op_str(AstOpKindUnary kind) {
 	case AST_OP_UNARY_BORROW: return "&";
 	case AST_OP_UNARY_DEREF:  return "*";
 	case AST_OP_UNARY_MOVE:   return "move";
+	case AST_OP_UNARY_RETURN: return "return";
 	}
 }
 
