@@ -152,6 +152,13 @@ static void print_expr(PrintCtx ctx, const AstExpr *expr) {
 		print_expr(deep(ctx, +1), expr->op_unary->operand);
 		break;
 
+	case AST_EXPR_LOOP:
+		print_tab(ctx);
+		printf(CLR_GREEN "LOOP BLOCK" CLR_END "\n");
+
+		print_expr(deep(ctx, +1), expr->loop->body->body);
+		break;
+
 	case AST_EXPR_IF:
 		print_tab(ctx);
 		printf(CLR_GREEN "BRANCH" CLR_END "\n");

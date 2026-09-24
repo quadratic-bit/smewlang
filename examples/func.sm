@@ -9,4 +9,8 @@ pub fn add(a: int32, b: int32) -> Result {
     } else {
         a = 2 + 3;
     };
+
+    loop {
+        a = a + 2;
+    }
 }

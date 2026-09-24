@@ -212,6 +212,38 @@ static AstBranch *parse_branch(Parser *parser) {
 	return br;
 }
 
+static AstLoop *parse_loop(Parser *parser) {
+	assert(parser->cur->kind == TOK_KEY_LOOP && "Unexpected token kind");
+
+	const Token *loop_tok = parser->cur;
+	consume(parser, TOK_KEY_LOOP);
+
+	AstLoop *loop = parser_alloc_one(parser, AstLoop);
+
+	if (parser->cur->kind != TOK_LBRACE) {
+		add_diag_expected(&parser->diags, parser->cur->span,
+		                  "Unexpected token after `loop`", "opening brace");
+
+		while (parser->cur->kind != TOK_LBRACE &&
+		       parser->cur->kind != TOK_RBRACE &&
+		       parser->cur->kind != TOK_EOF)
+		{
+			parser->cur++;
+		}
+
+		// XXX: code duplication from `parse_branch`
+		if (parser->cur->kind != TOK_LBRACE) {
+			loop->body = empty_block(parser);
+			loop->span = span_span(loop_tok->span, parser->cur->span);
+			return loop;
+		}
+	}
+
+	loop->body = parse_block(parser);
+	loop->span = span_span(loop_tok->span, loop->body->span);
+	return loop;
+}
+
 static AstExpr *parse_expr_prefix(Parser *parser) {
 	const Token *cur_tok = parser->cur;
 
@@ -251,6 +283,17 @@ static AstExpr *parse_expr_prefix(Parser *parser) {
 		base_expr->kind   = AST_EXPR_IF;
 		base_expr->branch = br;
 		base_expr->span   = br->span;
+
+		return base_expr;
+	}
+
+	if (cur_tok->kind == TOK_KEY_LOOP) {
+		AstLoop *loop      = parse_loop(parser);
+		AstExpr *base_expr = parser_alloc_one(parser, AstExpr);
+
+		base_expr->kind = AST_EXPR_LOOP;
+		base_expr->loop = loop;
+		base_expr->span = loop->span;
 
 		return base_expr;
 	}
