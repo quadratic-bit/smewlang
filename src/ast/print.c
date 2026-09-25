@@ -55,6 +55,7 @@ static const char *binary_op_str(AstOpKindBinary kind) {
 static const char *unary_op_str(AstOpKindUnary kind) {
 	switch (kind) {
 	case AST_OP_UNARY_NOT:    return "!";
+	case AST_OP_UNARY_MINUS:  return "-";
 	case AST_OP_UNARY_UNWRAP: return "?";
 	case AST_OP_UNARY_BORROW: return "&";
 	case AST_OP_UNARY_DEREF:  return "*";

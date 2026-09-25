@@ -39,6 +39,9 @@ static int is_infix_op(BindingPower bp) {
 static uint8_t get_expr_prefix_bp(TokenKind kind) {
 	switch (kind) {
 	case TOK_BANG:       return 14;
+	case TOK_MINUS:      return 14;
+	case TOK_STAR:       return 14;
+	case TOK_AMP:        return 14;
 	case TOK_KEY_RETURN: return 3;
 	default:
 		return NO_BP;
@@ -66,6 +69,7 @@ static BindingPower get_expr_infix_bp(TokenKind kind) {
 	case TOK_STAR:      return (BindingPower){.left = 12, .right = 13   };
 
 	case TOK_QUESTION:  return (BindingPower){.left = 15, .right = NO_BP};
+	case TOK_LPAREN:    return (BindingPower){.left = 15, .right = 15   };
 	case TOK_LBRACKET:  return (BindingPower){.left = 15, .right = 15   };
 
 	case TOK_DOT:       return (BindingPower){.left = 16, .right = 17   };
@@ -77,10 +81,11 @@ static BindingPower get_expr_infix_bp(TokenKind kind) {
 
 static AstOpKindUnary cast_tok_to_prefix(TokenKind kind) {
 	switch (kind) {
-	case TOK_BANG:
-		return AST_OP_UNARY_NOT;
-	case TOK_KEY_RETURN:
-		return AST_OP_UNARY_RETURN;
+	case TOK_BANG:       return AST_OP_UNARY_NOT;
+	case TOK_MINUS:      return AST_OP_UNARY_MINUS;
+	case TOK_STAR:       return AST_OP_UNARY_DEREF;
+	case TOK_AMP:        return AST_OP_UNARY_BORROW;
+	case TOK_KEY_RETURN: return AST_OP_UNARY_RETURN;
 	default:
 		assert(0 && "Invalid prefix cast");
 	}

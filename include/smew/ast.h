@@ -94,6 +94,7 @@ typedef enum {
 
 typedef enum {
 	AST_OP_UNARY_NOT,
+	AST_OP_UNARY_MINUS,
 	AST_OP_UNARY_MOVE,
 	AST_OP_UNARY_RETURN,
 	AST_OP_UNARY_BORROW,
