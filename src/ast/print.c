@@ -102,6 +102,31 @@ static void print_literal(PrintCtx ctx, const AstLiteral *lit) {
 }
 
 static void print_expr(PrintCtx, const AstExpr *);
+static void print_type(PrintCtx, const AstType *);
+
+static void print_bind(PrintCtx ctx, const AstBind *bind) {
+	print_tab(ctx);
+	printf(CLR_GREEN "BIND" CLR_END "\n");
+
+	print_tab(deep(ctx, +1));
+	printf(CLR_GREEN "NAME " CLR_END);
+	print_ident(ctx, bind->name);
+	putchar('\n');
+
+	print_tab(deep(ctx, +1));
+	printf(CLR_GREEN "TYPE" CLR_END "\n");
+
+	set_next_sibling(ctx, 1);
+
+	print_type(deep(ctx, +2), bind->type);
+
+	set_next_sibling(ctx, 0);
+
+	print_tab(deep(ctx, +1));
+	printf(CLR_GREEN "VALUE" CLR_END "\n");
+
+	print_expr(deep(ctx, +2), bind->value);
+}
 
 static void print_call(PrintCtx ctx, const AstCall *call) {
 	print_tab(ctx);
@@ -197,9 +222,12 @@ static void print_expr(PrintCtx ctx, const AstExpr *expr) {
 		printf(CLR_GREEN "BREAK" CLR_END "\n");
 		break;
 
+	case AST_EXPR_BIND:
+		print_bind(ctx, expr->bind);
+		break;
+
 	case AST_EXPR_CALL:
 		print_call(ctx, expr->call);
-
 		break;
 
 	case AST_EXPR_INDEX:

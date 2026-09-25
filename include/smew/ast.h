@@ -188,7 +188,7 @@ typedef enum {
 	AST_EXPR_OP_UNARY,   // done
 	AST_EXPR_CALL,       // done
 	AST_EXPR_INDEX,      // done
-	AST_EXPR_BIND,
+	AST_EXPR_BIND,       // done
 	AST_EXPR_WITH,
 	AST_EXPR_BREAK,      // done
 	AST_EXPR_LITERAL,    // done

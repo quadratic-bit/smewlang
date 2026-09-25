@@ -2,6 +2,7 @@
 
 #include "block.h"
 #include "parse.h"
+#include "type.h"
 
 #include <smew/ast.h>
 #include <smew/diag.h>
@@ -140,6 +141,46 @@ AstExpr *unit_expr(Parser *parser) {
 	expr->literal = lit;
 
 	return expr;
+}
+
+static AstBind *parse_bind(Parser *parser) {
+	assert(parser->cur->kind == TOK_KEY_LET && "Unexpected token kind");
+	const Token *let_tok = parser->cur;
+
+	consume(parser, TOK_KEY_LET);
+
+	AstBind *bind = parser_alloc_one(parser, AstBind);
+
+	if (parser->cur->kind != TOK_IDENTIFIER) {
+		add_diag_expected(&parser->diags, parser->cur->span,
+		                  "Unexpected token in bind expression", "identifier");
+		bind->name = unknown_ident(parser);
+
+		if (parser->cur->kind != TOK_COLON) {
+			parser->cur++;  // maybe it's a keyword or a literal?
+		}
+	} else {
+		bind->name = consume_ident(parser);
+	}
+
+	consume_or_insert(parser, TOK_COLON, "colon");
+
+	bind->type = parse_type(parser, MIN_BP);
+
+	consume_or_insert(parser, TOK_ASSIGN, "assignment");
+
+	bind->value = parse_expr(parser, 4); // XXX: magic number + brittle + L + bozo
+
+	if (bind->value == NULL) {
+		add_diag_expected(&parser->diags, parser->cur->span,
+		                  "Unexpected token in bind expression", "expression");
+		bind->value = unknown_expr(parser);
+		bind->span  = span_span(let_tok->span, parser->cur->span);
+	} else {
+		bind->span  = span_span(let_tok->span, bind->type->span);
+	}
+
+	return bind;
 }
 
 static AstCondBlock *parse_cond_block(Parser *parser, int is_else) {
@@ -281,6 +322,17 @@ static AstExpr *parse_expr_prefix(Parser *parser) {
 		base_expr->kind    = AST_EXPR_LITERAL;
 		base_expr->literal = lit;
 		base_expr->span    = lit->span;
+
+		return base_expr;
+	}
+
+	if (cur_tok->kind == TOK_KEY_LET) {
+		AstBind *bind = parse_bind(parser);
+		AstExpr *base_expr = parser_alloc_one(parser, AstExpr);
+
+		base_expr->kind = AST_EXPR_BIND;
+		base_expr->bind = bind;
+		base_expr->span = bind->span;
 
 		return base_expr;
 	}
@@ -438,7 +490,6 @@ static AstExpr *parse_expr_infix(Parser *parser, AstExpr *base, uint8_t min_bp) 
 		new_base->span  = index->span;
 		return new_base;
 	}
-
 
 	new_base->kind = AST_EXPR_OP_BINARY;
 

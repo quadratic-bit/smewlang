@@ -58,7 +58,7 @@ AstIdent *consume_ident(Parser *parser) {
 	return ident;
 }
 
-static AstIdent *unknown_ident(Parser *parser) {
+AstIdent *unknown_ident(Parser *parser) {
 	AstIdent *ident = parser_alloc_one(parser, AstIdent);
 	ident->span = zero_span();
 	return ident;

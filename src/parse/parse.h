@@ -30,6 +30,8 @@ int guard_eof(Parser *parser);
 
 void      consume          (Parser *parser, TokenKind expect);
 int       consume_or_insert(Parser *parser, TokenKind expect, const char *expect_str);
-AstIdent *consume_ident    (Parser *parser);
+
+AstIdent *consume_ident(Parser *parser);
+AstIdent *unknown_ident(Parser *parser);
 
 #endif
