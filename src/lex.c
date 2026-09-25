@@ -32,6 +32,7 @@ const char *token_kind_name(TokenKind kind) {
 	case TOK_KEY_RETURN:     return "KEYWORD:RETURN";
 	case TOK_KEY_MOVE:       return "KEYWORD:MOVE";
 	case TOK_KEY_LET:        return "KEYWORD:LET";
+	case TOK_KEY_UNIT:       return "KEYWORD:UNIT";
 	case TOK_LPAREN:         return "PAREN:L";
 	case TOK_RPAREN:         return "PAREN:R";
 	case TOK_LBRACKET:       return "BRACKET:L";
@@ -205,6 +206,7 @@ static TokenKind try_keyword_cast(const Lexer *lexer, size_t start) {
 	if (compare_span(tok, tok_len, "if"    )) return TOK_KEY_IF;
 	if (compare_span(tok, tok_len, "else"  )) return TOK_KEY_ELSE;
 	if (compare_span(tok, tok_len, "let"   )) return TOK_KEY_LET;
+	if (compare_span(tok, tok_len, "unit"  )) return TOK_KEY_UNIT;
 	return TOK_IDENTIFIER;
 }
 
