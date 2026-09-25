@@ -86,27 +86,62 @@ static void print_ident(PrintCtx ctx, const AstIdent *ident) {
 	}
 }
 
+static void print_expr(PrintCtx, const AstExpr *);
+static void print_type(PrintCtx, const AstType *);
+
 static void print_literal(PrintCtx ctx, const AstLiteral *lit) {
+	print_tab(ctx);
+	printf(CLR_GREEN "LITERAL " CLR_END);
+
 	switch (lit->kind) {
 	case AST_LITERAL_INT:
-		printf(CLR_YELLOW "int(%.*s)" CLR_END, (int)(lit->span.len),
+		printf(CLR_YELLOW "int(%.*s)\n" CLR_END, (int)(lit->span.len),
 		       ctx.printer->src + lit->span.start);
 		break;
 	case AST_LITERAL_STRING:
-		printf(CLR_YELLOW "str(%.*s)" CLR_END, (int)(lit->span.len),
+		printf(CLR_YELLOW "str(%.*s)\n" CLR_END, (int)(lit->span.len),
 		       ctx.printer->src + lit->span.start);
 		break;
 	case AST_LITERAL_UNIT:
-		printf(CLR_YELLOW "unit" CLR_END);
+		printf(CLR_YELLOW "unit\n" CLR_END);
 		break;
-	default:
-		// TODO:
-		assert(0 && "Print for this literal type is not implemented");
+	case AST_LITERAL_STRUCT:
+		printf(CLR_GREEN "STRUCT " CLR_END);
+		print_ident(ctx, lit->struc->type);
+		putchar('\n');
+
+		if (lit->struc->fields == NULL) {
+			print_tab(deep(ctx, +1));
+			printf(CLR_GREEN "NO FIELDS" CLR_END "\n");
+			return;
+		}
+
+		AstLiteralStructField *cur = lit->struc->fields;
+		set_next_sibling(ctx, 1);
+
+		while (cur != NULL) {
+			if (cur->next == NULL) {
+				set_next_sibling(ctx, 0);
+			}
+
+			print_tab(deep(ctx, +1));
+			printf(CLR_GREEN "FIELD" CLR_END "\n");
+
+			print_tab(deep(ctx, +2));
+			printf(CLR_GREEN "NAME " CLR_END);
+			print_ident(ctx, cur->field);
+			putchar('\n');
+
+			print_tab(deep(ctx, +2));
+			printf(CLR_GREEN "VALUE" CLR_END "\n");
+
+			print_expr(deep(ctx, +3), cur->value);
+			cur = cur->next;
+		}
+		set_next_sibling(ctx, 0);
+		break;
 	}
 }
-
-static void print_expr(PrintCtx, const AstExpr *);
-static void print_type(PrintCtx, const AstType *);
 
 static void print_bind(PrintCtx ctx, const AstBind *bind) {
 	print_tab(ctx);
@@ -203,10 +238,7 @@ static void print_expr(PrintCtx ctx, const AstExpr *expr) {
 		break;
 
 	case AST_EXPR_LITERAL:
-		print_tab(ctx);
-		printf(CLR_GREEN "LITERAL " CLR_END);
 		print_literal(ctx, expr->literal);
-		putchar('\n');
 		break;
 
 	case AST_EXPR_OP_BINARY:

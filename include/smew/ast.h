@@ -131,7 +131,7 @@ struct AstLiteralStructField {
 };
 
 typedef struct {
-	AstType *type;
+	AstIdent *type;
 	AstLiteralStructField *fields;
 } AstStructLiteral;
 
@@ -142,7 +142,7 @@ typedef struct {
 	union {
 		/* Nothing       Unit; */
 		/* Nothing       Int; */
-		AstStructLiteral struc;
+		AstStructLiteral *struc;
 	};
 } AstLiteral;
 
