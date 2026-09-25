@@ -157,6 +157,12 @@ static void print_call(PrintCtx ctx, const AstCall *call) {
 	set_next_sibling(ctx, 0);
 
 	print_tab(deep(ctx, +1));
+
+	if (call->args->arg == NULL) {
+		printf(CLR_GREEN "NO ARGS" CLR_END "\n");
+		return;
+	}
+
 	printf(CLR_GREEN "ARGS" CLR_END "\n");
 
 	AstCallArg *cur = call->args;

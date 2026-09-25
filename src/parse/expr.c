@@ -474,7 +474,15 @@ static AstExpr *parse_expr_infix(Parser *parser, AstExpr *base, uint8_t min_bp) 
 		new_base->kind = AST_EXPR_CALL;
 
 		AstCall    *call = parser_alloc_one(parser, AstCall);
-		AstCallArg *args = parse_call_args(parser);
+		AstCallArg *args;
+
+		if (parser->cur->kind != TOK_RPAREN) {
+			args = parse_call_args(parser);
+		} else {
+			args = parser_alloc_one(parser, AstCallArg);
+			args->arg  = NULL;
+			args->next = NULL;
+		}
 
 		consume_or_insert(parser, TOK_RPAREN, "closing parenthesis");
 
