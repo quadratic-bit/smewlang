@@ -182,17 +182,17 @@ typedef struct {
 
 typedef enum {
 	AST_EXPR_UNKNOWN,
-	AST_EXPR_IF,         // done
-	AST_EXPR_LOOP,       // done
-	AST_EXPR_OP_BINARY,  // done
-	AST_EXPR_OP_UNARY,   // done
-	AST_EXPR_CALL,       // done
-	AST_EXPR_INDEX,      // done
-	AST_EXPR_BIND,       // done
+	AST_EXPR_IF,
+	AST_EXPR_LOOP,
+	AST_EXPR_OP_BINARY,
+	AST_EXPR_OP_UNARY,
+	AST_EXPR_CALL,
+	AST_EXPR_INDEX,
+	AST_EXPR_BIND,
 	AST_EXPR_WITH,
-	AST_EXPR_BREAK,      // done
-	AST_EXPR_LITERAL,    // done
-	AST_EXPR_IDENT,      // done
+	AST_EXPR_BREAK,
+	AST_EXPR_LITERAL,
+	AST_EXPR_IDENT,
 } AstExprKind;
 
 struct AstExpr {

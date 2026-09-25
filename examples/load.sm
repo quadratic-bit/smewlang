@@ -44,7 +44,7 @@ pub fn load_score_table(&String filename) in FileSystem -> Result(ScoreTable, Lo
             };
 
             i += 1;
-        }
+        };
 
         ScoreTable {
             backing: move backing,

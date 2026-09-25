@@ -128,6 +128,21 @@ static void print_bind(PrintCtx ctx, const AstBind *bind) {
 	print_expr(deep(ctx, +2), bind->value);
 }
 
+static void print_with(PrintCtx ctx, const AstWith *with) {
+	print_tab(ctx);
+	printf(CLR_GREEN "WITH" CLR_END "\n");
+
+	set_next_sibling(ctx, 1);
+	print_bind(deep(ctx, +1), with->bind);
+	set_next_sibling(ctx, 0);
+
+	print_tab(deep(ctx, +1));
+	printf(CLR_GREEN "BLOCK" CLR_END "\n");
+
+	print_expr(deep(ctx, +2), with->body->body);
+
+}
+
 static void print_call(PrintCtx ctx, const AstCall *call) {
 	print_tab(ctx);
 	printf(CLR_GREEN "CALL" CLR_END "\n");
@@ -226,6 +241,10 @@ static void print_expr(PrintCtx ctx, const AstExpr *expr) {
 		print_bind(ctx, expr->bind);
 		break;
 
+	case AST_EXPR_WITH:
+		print_with(ctx, expr->with);
+		break;
+
 	case AST_EXPR_CALL:
 		print_call(ctx, expr->call);
 		break;
@@ -271,10 +290,6 @@ static void print_expr(PrintCtx ctx, const AstExpr *expr) {
 			cur = cur->next;
 		}
 		break;
-
-	default:
-		// TODO:
-		assert(0 && "Print for this expression type is not implemented");
 	}
 }
 

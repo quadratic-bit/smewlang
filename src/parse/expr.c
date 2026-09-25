@@ -327,12 +327,31 @@ static AstExpr *parse_expr_prefix(Parser *parser) {
 	}
 
 	if (cur_tok->kind == TOK_KEY_LET) {
-		AstBind *bind = parse_bind(parser);
+		AstBind *bind      = parse_bind(parser);
 		AstExpr *base_expr = parser_alloc_one(parser, AstExpr);
 
 		base_expr->kind = AST_EXPR_BIND;
 		base_expr->bind = bind;
 		base_expr->span = bind->span;
+
+		return base_expr;
+	}
+
+	if (cur_tok->kind == TOK_KEY_WITH) {
+		AstWith *with = parser_alloc_one(parser, AstWith);
+		const Token *with_tok = parser->cur;
+		consume(parser, TOK_KEY_WITH);
+
+		AstBind  *bind  = parse_bind(parser);
+		AstBlock *block = parse_block(parser);
+		with->bind = bind;
+		with->body = block;
+		with->span = span_span(with_tok->span, block->span);
+
+		AstExpr *base_expr = parser_alloc_one(parser, AstExpr);
+		base_expr->kind = AST_EXPR_WITH;
+		base_expr->with = with;
+		base_expr->span = with->span;
 
 		return base_expr;
 	}
