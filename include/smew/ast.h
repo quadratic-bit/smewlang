@@ -145,10 +145,16 @@ typedef struct {
 	};
 } AstLiteral;
 
+typedef struct AstCallArg AstCallArg;
+struct AstCallArg {
+	AstExpr    *arg;
+	AstCallArg *next;
+};
+
 typedef struct {
 	Span span;
-	AstExpr *callee;
-	Vec(AstExpr *) params; // TODO: eliminate all Vecs
+	AstExpr    *callee;
+	AstCallArg *args;
 } AstCall;
 
 typedef struct {
@@ -180,7 +186,7 @@ typedef enum {
 	AST_EXPR_LOOP,       // done
 	AST_EXPR_OP_BINARY,  // done
 	AST_EXPR_OP_UNARY,   // done
-	AST_EXPR_CALL,
+	AST_EXPR_CALL,       // done
 	AST_EXPR_INDEX,      // done
 	AST_EXPR_BIND,
 	AST_EXPR_WITH,

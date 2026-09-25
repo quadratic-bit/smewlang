@@ -101,6 +101,37 @@ static void print_literal(PrintCtx ctx, const AstLiteral *lit) {
 	}
 }
 
+static void print_expr(PrintCtx, const AstExpr *);
+
+static void print_call(PrintCtx ctx, const AstCall *call) {
+	print_tab(ctx);
+	printf(CLR_GREEN "CALL" CLR_END "\n");
+
+	print_tab(deep(ctx, +1));
+	printf(CLR_GREEN "CALLEE" CLR_END "\n");
+
+	set_next_sibling(ctx, 1);
+
+	print_expr(deep(ctx, +2), call->callee);
+
+	set_next_sibling(ctx, 0);
+
+	print_tab(deep(ctx, +1));
+	printf(CLR_GREEN "ARGS" CLR_END "\n");
+
+	AstCallArg *cur = call->args;
+	set_next_sibling(deep(ctx, +1), 1);
+
+	while (cur != NULL) {
+		if (cur->next == NULL) {
+			set_next_sibling(deep(ctx, +1), 0);
+		}
+		print_expr(deep(ctx, +2), cur->arg);
+		cur = cur->next;
+	}
+	set_next_sibling(deep(ctx, +1), 0);
+}
+
 static void print_expr(PrintCtx ctx, const AstExpr *expr) {
 	switch (expr->kind) {
 	case AST_EXPR_UNKNOWN:
@@ -164,6 +195,11 @@ static void print_expr(PrintCtx ctx, const AstExpr *expr) {
 	case AST_EXPR_BREAK:
 		print_tab(ctx);
 		printf(CLR_GREEN "BREAK" CLR_END "\n");
+		break;
+
+	case AST_EXPR_CALL:
+		print_call(ctx, expr->call);
+
 		break;
 
 	case AST_EXPR_INDEX:

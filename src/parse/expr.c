@@ -350,6 +350,29 @@ static AstExpr *parse_expr_prefix(Parser *parser) {
 	return base_expr;
 }
 
+static AstCallArg *parse_call_args(Parser *parser) {
+	AstCallArg *arg = parser_alloc_one(parser, AstCallArg);
+	arg->next = NULL;
+
+	AstExpr *expr = parse_expr(parser, MIN_BP);
+
+	if (expr == NULL) {
+		add_diag_expected(&parser->diags, parser->cur->span,
+				  "Unexpected token", "identifier");
+		arg->arg = unknown_expr(parser);
+	} else {
+		arg->arg = expr;
+	}
+
+	if (parser->cur->kind == TOK_COMMA) {
+		consume(parser, TOK_COMMA);
+		arg->next = parse_call_args(parser);
+	}
+
+	return arg;
+}
+
+
 static AstExpr *parse_expr_infix(Parser *parser, AstExpr *base, uint8_t min_bp) {
 	const Token *op = parser->cur;
 	BindingPower bp = get_expr_infix_bp(op->kind);
@@ -376,6 +399,23 @@ static AstExpr *parse_expr_infix(Parser *parser, AstExpr *base, uint8_t min_bp) 
 
 	AstExpr *new_base = parser_alloc_one(parser, AstExpr);
 
+	if (op->kind == TOK_LPAREN) {
+		new_base->kind = AST_EXPR_CALL;
+
+		AstCall    *call = parser_alloc_one(parser, AstCall);
+		AstCallArg *args = parse_call_args(parser);
+
+		consume_or_insert(parser, TOK_RPAREN, "closing parenthesis");
+
+		call->callee = base;
+		call->args   = args;
+		call->span   = span_span(base->span, parser->cur->span);
+
+		new_base->call = call;
+		new_base->span = call->span;
+
+		return new_base;
+	}
 
 	if (op->kind == TOK_LBRACKET) {
 		new_base->kind = AST_EXPR_INDEX;
