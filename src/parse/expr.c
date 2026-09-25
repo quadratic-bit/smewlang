@@ -67,6 +67,7 @@ static uint8_t get_expr_prefix_bp(TokenKind kind) {
 	case TOK_MINUS:      return 14;
 	case TOK_STAR:       return 14;
 	case TOK_AMP:        return 14;
+	case TOK_KEY_MOVE:   return 3;
 	case TOK_KEY_RETURN: return 3;
 	default:
 		return NO_BP;
@@ -110,6 +111,7 @@ static AstOpKindUnary cast_tok_to_prefix(TokenKind kind) {
 	case TOK_MINUS:      return AST_OP_UNARY_MINUS;
 	case TOK_STAR:       return AST_OP_UNARY_DEREF;
 	case TOK_AMP:        return AST_OP_UNARY_BORROW;
+	case TOK_KEY_MOVE:   return AST_OP_UNARY_MOVE;
 	case TOK_KEY_RETURN: return AST_OP_UNARY_RETURN;
 	default:
 		assert(0 && "Invalid prefix cast");

@@ -23,12 +23,11 @@ pub fn load_score_table(filename: &String) -> Result(ScoreTable, LoadError) {
         let records: Record[] = alloc[Record](record_count)?;
 
         let mut offset: usize = 0;
-
         let mut i: usize = 0;
         loop {
             if i >= record_count {
                 break;
-            }
+            };
 
             let name_len: usize = uint16.from_le(backing.get(offset, 2)?).to[usize]()?;
             offset = offset + 2;
@@ -39,15 +38,15 @@ pub fn load_score_table(filename: &String) -> Result(ScoreTable, LoadError) {
             let score: int32 = int32.from_le(backing.get(offset, 4)?);
             offset = offset + 4;
 
-            records[i] = Record {
+            records[i] = Record.{
                 name:  name,
                 score: move score
             };
 
-            i += 1;
+            i = i + 1;
         };
 
-        ScoreTable {
+        ScoreTable.{
             backing: move backing,
             records: move records
         }
