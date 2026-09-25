@@ -92,6 +92,10 @@ static void print_literal(PrintCtx ctx, const AstLiteral *lit) {
 		printf(CLR_YELLOW "int(%.*s)" CLR_END, (int)(lit->span.len),
 		       ctx.printer->src + lit->span.start);
 		break;
+	case AST_LITERAL_STRING:
+		printf(CLR_YELLOW "str(%.*s)" CLR_END, (int)(lit->span.len),
+		       ctx.printer->src + lit->span.start);
+		break;
 	case AST_LITERAL_UNIT:
 		printf(CLR_YELLOW "unit" CLR_END);
 		break;

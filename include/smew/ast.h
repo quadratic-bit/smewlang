@@ -118,6 +118,7 @@ typedef struct {
 typedef enum {
 	AST_LITERAL_UNIT,
 	AST_LITERAL_INT,
+	AST_LITERAL_STRING,
 	AST_LITERAL_STRUCT,
 } AstLiterlKind;
 

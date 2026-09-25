@@ -25,6 +25,18 @@ static AstLiteral *consume_literal_int(Parser *parser) {
 	return lit;
 }
 
+static AstLiteral *consume_literal_str(Parser *parser) {
+	assert(parser->cur->kind == TOK_LITERAL_STRING && "Unexpected token kind");
+
+	AstLiteral *lit = parser_alloc_one(parser, AstLiteral);
+	lit->kind = AST_LITERAL_STRING;
+	lit->span = parser->cur->span;
+
+	parser->cur++;
+
+	return lit;
+}
+
 static int is_prefix_op(uint8_t bp) {
 	return bp != NO_BP;
 }
@@ -319,6 +331,17 @@ static AstExpr *parse_expr_prefix(Parser *parser) {
 
 	if (cur_tok->kind == TOK_LITERAL_INT) {
 		AstLiteral *lit       = consume_literal_int(parser);
+		AstExpr    *base_expr = parser_alloc_one(parser, AstExpr);
+
+		base_expr->kind    = AST_EXPR_LITERAL;
+		base_expr->literal = lit;
+		base_expr->span    = lit->span;
+
+		return base_expr;
+	}
+
+	if (cur_tok->kind == TOK_LITERAL_STRING) {
+		AstLiteral *lit       = consume_literal_str(parser);
 		AstExpr    *base_expr = parser_alloc_one(parser, AstExpr);
 
 		base_expr->kind    = AST_EXPR_LITERAL;
