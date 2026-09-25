@@ -151,6 +151,8 @@ static AstBind *parse_bind(Parser *parser) {
 
 	AstBind *bind = parser_alloc_one(parser, AstBind);
 
+	bind->mut = consume_maybe(parser, TOK_KEY_MUT);
+
 	if (parser->cur->kind != TOK_IDENTIFIER) {
 		add_diag_expected(&parser->diags, parser->cur->span,
 		                  "Unexpected token in bind expression", "identifier");

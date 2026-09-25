@@ -36,7 +36,7 @@ void consume(Parser *parser, TokenKind expect) {
 	parser->cur++;
 }
 
-static int consume_maybe(Parser *parser, TokenKind expected) {
+int consume_maybe(Parser *parser, TokenKind expected) {
 	if (parser->cur->kind == expected) {
 		parser->cur++;
 		return 1;

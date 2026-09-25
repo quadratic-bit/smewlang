@@ -29,6 +29,7 @@ const Token *prev(const Parser *parser);
 int guard_eof(Parser *parser);
 
 void      consume          (Parser *parser, TokenKind expect);
+int       consume_maybe    (Parser *parser, TokenKind expected);
 int       consume_or_insert(Parser *parser, TokenKind expect, const char *expect_str);
 
 AstIdent *consume_ident(Parser *parser);

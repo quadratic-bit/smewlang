@@ -165,9 +165,12 @@ typedef struct {
 
 typedef struct {
 	Span span;
+
 	AstType  *type;
 	AstIdent *name;
 	AstExpr  *value;
+
+	int mut;
 } AstBind;
 
 typedef struct {

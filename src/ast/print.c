@@ -106,7 +106,13 @@ static void print_type(PrintCtx, const AstType *);
 
 static void print_bind(PrintCtx ctx, const AstBind *bind) {
 	print_tab(ctx);
-	printf(CLR_GREEN "BIND" CLR_END "\n");
+	printf(CLR_GREEN "BIND" CLR_END);
+
+	if (bind->mut) {
+		printf(CLR_GREEN " MUT" CLR_END);
+	}
+
+	putchar('\n');
 
 	print_tab(deep(ctx, +1));
 	printf(CLR_GREEN "NAME " CLR_END);
@@ -377,7 +383,7 @@ static void print_type(PrintCtx ctx, const AstType *type) {
 
 static void print_struct_field(PrintCtx ctx, const AstStructField *field) {
 	print_tab(ctx);
-	printf(CLR_GREEN " FIELD" CLR_END "\n");
+	printf(CLR_GREEN "FIELD" CLR_END "\n");
 
 	print_tab(deep(ctx, +1));
 	printf(CLR_GREEN "NAME " CLR_END);
