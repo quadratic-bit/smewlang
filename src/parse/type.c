@@ -46,13 +46,12 @@ static AstType *parse_type_prefix(Parser *parser) {
 
 		consume(parser, TOK_AMP);
 
-		cur_tok = parser->cur;
+		int mutable = consume_maybe(parser, TOK_KEY_MUT);
 
 		AstType *operand   = parse_type(parser, bp);
 		AstType *base_type = parser_alloc_one(parser, AstType);
 
-		if (cur_tok->kind == TOK_KEY_MUT) {
-			consume(parser, TOK_KEY_MUT);
+		if (mutable) {
 			base_type->kind = AST_TYPE_BORROW_MUT;
 			base_type->borrow_mut.inner = operand;
 		} else {
