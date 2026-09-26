@@ -227,6 +227,27 @@ static AstFunctionContext *parse_func_contexts(Parser *parser) {
 	return ctx;
 }
 
+static AstFunctionGeneric *parse_func_generics(Parser *parser) {
+	AstFunctionGeneric *generic = parser_alloc_one(parser, AstFunctionGeneric);
+	generic->next = NULL;
+
+	if (parser->cur->kind == TOK_IDENTIFIER) {
+		generic->name = consume_ident(parser);
+	} else {
+		add_diag_expected(&parser->diags, parser->cur->span,
+		                  "Unexpected token", "identifier");
+		generic->name = unknown_ident(parser);
+	}
+
+	if (parser->cur->kind == TOK_COMMA) {
+		consume(parser, TOK_COMMA);
+		generic->next = parse_func_generics(parser);
+	}
+	generic->span = generic->name->span;
+
+	return generic;
+}
+
 static AstFunction *parse_def_func(Parser *parser) {
 	assert((parser->cur->kind == TOK_KEY_PUB ||
 	        parser->cur->kind == TOK_KEY_FN) && "Function must start with `fn` or `pub");
@@ -234,7 +255,9 @@ static AstFunction *parse_def_func(Parser *parser) {
 	const Token *start_tok = parser->cur;
 
 	AstFunction *func_def = parser_alloc_one(parser, AstFunction);
-	func_def->params = NULL;
+	func_def->params   = NULL;
+	func_def->generics = NULL;
+	func_def->contexts = NULL;
 
 	func_def->is_public = consume_maybe(parser, TOK_KEY_PUB);
 	consume_or_insert(parser, TOK_KEY_FN, "`fn` keyword");
@@ -261,6 +284,15 @@ static AstFunction *parse_def_func(Parser *parser) {
 		}
 	}
 
+	if (parser->cur->kind == TOK_LBRACKET) {
+		consume(parser, TOK_LBRACKET);
+		if (parser->cur->kind != TOK_RBRACKET) {
+			func_def->generics = parse_func_generics(parser);
+			consume_or_insert(parser, TOK_RBRACKET, "closing bracket");
+		} else {
+			consume(parser, TOK_RBRACKET);
+		}
+	}
 	if (parser->cur->kind == TOK_LPAREN) {
 		consume(parser, TOK_LPAREN);
 
@@ -277,8 +309,6 @@ static AstFunction *parse_def_func(Parser *parser) {
 	if (parser->cur->kind == TOK_KEY_IN) {
 		consume(parser, TOK_KEY_IN);
 		func_def->contexts = parse_func_contexts(parser);
-	} else {
-		func_def->contexts = NULL;
 	}
 
 	consume_or_insert(parser, TOK_ARROW, "arrow");

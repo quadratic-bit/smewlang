@@ -496,6 +496,19 @@ static void print_func(PrintCtx ctx, const AstFunction *func) {
 		}
 	}
 
+	if (func->generics != NULL) {
+		print_tab(deep(ctx, +1));
+		printf(CLR_GREEN "GENERIC PARAMS" CLR_END "\n");
+
+		AstFunctionGeneric *generic = func->generics;
+		while (generic != NULL) {
+			print_tab(deep(ctx, +2));
+			print_ident(ctx, generic->name);
+			putchar('\n');
+			generic = generic->next;
+		}
+	}
+
 	AstFunctionParam *param = func->params;
 	while (param != NULL) {
 		print_func_param(deep(ctx, +1), param);

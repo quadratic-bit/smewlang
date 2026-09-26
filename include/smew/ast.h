@@ -238,6 +238,13 @@ struct AstFunctionContext {
 	AstFunctionContext *next;
 };
 
+typedef struct AstFunctionGeneric AstFunctionGeneric;
+struct AstFunctionGeneric {
+	Span      span;
+	AstIdent *name;
+	AstFunctionGeneric *next;
+};
+
 typedef struct {
 	Span span;
 	int  is_public;
@@ -245,6 +252,7 @@ typedef struct {
 	AstIdent *name;
 	AstFunctionParam   *params;
 	AstFunctionContext *contexts;
+	AstFunctionGeneric *generics;
 	AstType  *return_type;
 	AstBlock *block;
 } AstFunction;
