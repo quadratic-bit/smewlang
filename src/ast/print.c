@@ -482,6 +482,20 @@ static void print_func(PrintCtx ctx, const AstFunction *func) {
 	print_tab(deep(ctx, +1));
 	printf(CLR_GREEN "RETURNS" CLR_END "\n");
 	print_type(deep(ctx, +2), func->return_type);
+
+	if (func->contexts != NULL) {
+		print_tab(deep(ctx, +1));
+		printf(CLR_GREEN "CONTEXTS" CLR_END "\n");
+
+		AstFunctionContext *context = func->contexts;
+		while (context != NULL) {
+			print_tab(deep(ctx, +2));
+			print_ident(ctx, context->name);
+			putchar('\n');
+			context = context->next;
+		}
+	}
+
 	AstFunctionParam *param = func->params;
 	while (param != NULL) {
 		print_func_param(deep(ctx, +1), param);

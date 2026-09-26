@@ -206,6 +206,27 @@ static AstFunctionParam *parse_func_params(Parser *parser) {
 	return param;
 }
 
+static AstFunctionContext *parse_func_contexts(Parser *parser) {
+	AstFunctionContext *ctx = parser_alloc_one(parser, AstFunctionContext);
+	ctx->next = NULL;
+
+	if (parser->cur->kind == TOK_IDENTIFIER) {
+		ctx->name = consume_ident(parser);
+	} else {
+		add_diag_expected(&parser->diags, parser->cur->span,
+		                  "Unexpected token", "identifier");
+		ctx->name = unknown_ident(parser);
+	}
+
+	if (parser->cur->kind == TOK_COMMA) {
+		consume(parser, TOK_COMMA);
+		ctx->next = parse_func_contexts(parser);
+	}
+	ctx->span = ctx->name->span;
+
+	return ctx;
+}
+
 static AstFunction *parse_def_func(Parser *parser) {
 	assert((parser->cur->kind == TOK_KEY_PUB ||
 	        parser->cur->kind == TOK_KEY_FN) && "Function must start with `fn` or `pub");
@@ -251,6 +272,13 @@ static AstFunction *parse_def_func(Parser *parser) {
 	} else {
 		add_diag_expected(&parser->diags, parser->cur->span,
 		                  "Unexpected token", "opening parenthesis (function params)");
+	}
+
+	if (parser->cur->kind == TOK_KEY_IN) {
+		consume(parser, TOK_KEY_IN);
+		func_def->contexts = parse_func_contexts(parser);
+	} else {
+		func_def->contexts = NULL;
 	}
 
 	consume_or_insert(parser, TOK_ARROW, "arrow");

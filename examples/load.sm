@@ -8,8 +8,7 @@ struct Record {
     score :  int32;
 }
 
-//                                       add context
-pub fn load_score_table(filename: &String) -> Result(ScoreTable, LoadError) {
+pub fn load_score_table(filename: &String) in FileSystem -> Result(ScoreTable, LoadError) {
     with let input_file: File = FileSystem.open(filename)? {
         let record_count_raw: uint32 = uint32.from_le(input_file.read(4)?);
 

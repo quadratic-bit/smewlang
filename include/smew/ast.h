@@ -224,7 +224,6 @@ struct AstBlock {
 };
 
 typedef struct AstFunctionParam AstFunctionParam;
-
 struct AstFunctionParam {
 	Span      span;
 	AstType  *type;
@@ -232,12 +231,20 @@ struct AstFunctionParam {
 	AstFunctionParam *next;
 };
 
+typedef struct AstFunctionContext AstFunctionContext;
+struct AstFunctionContext {
+	Span      span;
+	AstIdent *name;
+	AstFunctionContext *next;
+};
+
 typedef struct {
 	Span span;
 	int  is_public;
 
 	AstIdent *name;
-	AstFunctionParam *params;
+	AstFunctionParam   *params;
+	AstFunctionContext *contexts;
 	AstType  *return_type;
 	AstBlock *block;
 } AstFunction;
