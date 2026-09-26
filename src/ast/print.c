@@ -223,6 +223,41 @@ static void print_call(PrintCtx ctx, const AstCall *call) {
 	set_next_sibling(deep(ctx, +1), 0);
 }
 
+static void print_type_apply(PrintCtx ctx, const AstTypeAppl *appl) {
+	print_tab(ctx);
+	printf(CLR_GREEN "TYPE APPLICATION" CLR_END "\n");
+
+	print_tab(deep(ctx, +1));
+	printf(CLR_GREEN "APPLICANT" CLR_END "\n");
+
+	set_next_sibling(ctx, 1);
+
+	print_expr(deep(ctx, +2), appl->applicant);
+
+	set_next_sibling(ctx, 0);
+
+	print_tab(deep(ctx, +1));
+
+	if (appl->args->arg == NULL) {
+		printf(CLR_GREEN "NO ARGS" CLR_END "\n");
+		return;
+	}
+
+	printf(CLR_GREEN "ARGS" CLR_END "\n");
+
+	AstTypeApplArg *cur = appl->args;
+	set_next_sibling(deep(ctx, +1), 1);
+
+	while (cur != NULL) {
+		if (cur->next == NULL) {
+			set_next_sibling(deep(ctx, +1), 0);
+		}
+		print_type(deep(ctx, +2), cur->arg);
+		cur = cur->next;
+	}
+	set_next_sibling(deep(ctx, +1), 0);
+}
+
 static void print_expr(PrintCtx ctx, const AstExpr *expr) {
 	switch (expr->kind) {
 	case AST_EXPR_UNKNOWN:
@@ -295,6 +330,10 @@ static void print_expr(PrintCtx ctx, const AstExpr *expr) {
 
 	case AST_EXPR_CALL:
 		print_call(ctx, expr->call);
+		break;
+
+	case AST_EXPR_TYPE_APPLY:
+		print_type_apply(ctx, expr->type_appl);
 		break;
 
 	case AST_EXPR_INDEX:

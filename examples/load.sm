@@ -8,22 +8,18 @@ struct Record {
     score :  int32;
 }
 
-fn dummy[T](x: T) -> T {
-    return x;
-}
-
 pub fn load_score_table(filename: &String) in FileSystem -> Result(ScoreTable, LoadError) {
     with let input_file: File = FileSystem.open(filename)? {
         let record_count_raw: uint32 = uint32.from_le(input_file.read(4)?);
 
         let backing: Byte[] = input_file.read_all()?;
 
-        let record_count: usize = record_count_raw.to[usize]()?;
+        let record_count: usize = record_count_raw.to:[usize]()?;
         if record_count > backing.len / (sizeof(uint16) + sizeof(int32)) {
             return LoadError.Malformed;
         };
 
-        let records: Record[] = alloc[Record](record_count)?;
+        let records: Record[] = alloc:[Record](record_count)?;
 
         let mut offset: usize = 0;
         let mut i: usize = 0;
@@ -32,7 +28,7 @@ pub fn load_score_table(filename: &String) in FileSystem -> Result(ScoreTable, L
                 break;
             };
 
-            let name_len: usize = uint16.from_le(backing.get(offset, 2)?).to[usize]()?;
+            let name_len: usize = uint16.from_le(backing.get(offset, 2)?).to:[usize]()?;
             offset = offset + 2;
 
             let name: &Byte[] = backing.get(offset, name_len)?;

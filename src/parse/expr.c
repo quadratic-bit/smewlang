@@ -493,6 +493,54 @@ static AstCallArg *parse_call_args(Parser *parser) {
 	return arg;
 }
 
+static AstTypeApplArg *parse_type_application_args(Parser *parser) {
+	AstTypeApplArg *arg = parser_alloc_one(parser, AstTypeApplArg);
+	arg->next = NULL;
+
+	AstType *type = parse_type(parser, MIN_BP);
+
+	if (type == NULL) {
+		add_diag_expected(&parser->diags, parser->cur->span, "Unexpected token", "type");
+		arg->arg = unknown_type(parser);
+	} else {
+		arg->arg = type;
+	}
+
+	if (parser->cur->kind == TOK_COMMA) {
+		consume(parser, TOK_COMMA);
+		arg->next = parse_type_application_args(parser);
+	}
+
+	return arg;
+}
+
+static AstTypeAppl *parse_type_application(Parser *parser, AstExpr *base) {
+	assert(parser->cur->kind == TOK_COLON && "Unexpected token kind");
+	assert((parser->cur+1)->kind == TOK_LBRACKET && "Unexpected token kind");
+
+	consume(parser, TOK_COLON);
+	consume(parser, TOK_LBRACKET);
+
+	AstTypeAppl    *appl = parser_alloc_one(parser, AstTypeAppl);
+	AstTypeApplArg *args;
+
+	if (parser->cur->kind != TOK_RBRACKET) {
+		args = parse_type_application_args(parser);
+	} else {
+		args = parser_alloc_one(parser, AstTypeApplArg);
+		args->arg  = NULL;
+		args->next = NULL;
+	}
+
+	consume_or_insert(parser, TOK_RBRACKET, "closing parenthesis");
+
+	appl->args   = args;
+	appl->applicant = base;
+	appl->span   = span_span(base->span, parser->cur->span);
+
+	return appl;
+}
+
 static AstLiteralStructField *parse_struct_lit_fields(Parser *parser) {
 	AstLiteralStructField *field = parser_alloc_one(parser, AstLiteralStructField);
 	field->next = NULL;
@@ -572,6 +620,7 @@ static AstLiteral *parse_literal_struct(Parser *parser, AstIdent *name) {
 static AstExpr *parse_expr_infix(Parser *parser, AstExpr *base, uint8_t min_bp) {
 	const Token *op = parser->cur;
 
+	// XXX: unique token
 	if (base->kind == AST_EXPR_IDENT && op->kind == TOK_DOT &&
 	    (parser->cur+1)->kind == TOK_LBRACE) { // XXX: next(parser)
 		AstLiteral *lit       = parse_literal_struct(parser, base->ident);
@@ -580,6 +629,18 @@ static AstExpr *parse_expr_infix(Parser *parser, AstExpr *base, uint8_t min_bp) 
 		base_expr->kind    = AST_EXPR_LITERAL;
 		base_expr->literal = lit;
 		base_expr->span    = lit->span;
+
+		return base_expr;
+	}
+
+	// XXX: unique token
+	if (op->kind == TOK_COLON && (parser->cur+1)->kind == TOK_LBRACKET) {
+		AstTypeAppl *appl      = parse_type_application(parser, base);
+		AstExpr     *base_expr = parser_alloc_one(parser, AstExpr);
+
+		base_expr->kind      = AST_EXPR_TYPE_APPLY;
+		base_expr->type_appl = appl;
+		base_expr->span      = appl->span;
 
 		return base_expr;
 	}

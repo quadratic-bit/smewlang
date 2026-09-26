@@ -158,6 +158,18 @@ typedef struct {
 	AstCallArg *args;
 } AstCall;
 
+typedef struct AstTypeApplArg AstTypeApplArg;
+struct AstTypeApplArg {
+	AstType        *arg;
+	AstTypeApplArg *next;
+};
+
+typedef struct {
+	Span span;
+	AstExpr        *applicant;
+	AstTypeApplArg *args;
+} AstTypeAppl;
+
 typedef struct {
 	Span span;
 	AstExpr *base;
@@ -191,6 +203,7 @@ typedef enum {
 	AST_EXPR_OP_BINARY,
 	AST_EXPR_OP_UNARY,
 	AST_EXPR_CALL,
+	AST_EXPR_TYPE_APPLY,
 	AST_EXPR_INDEX,
 	AST_EXPR_BIND,
 	AST_EXPR_WITH,
@@ -209,6 +222,7 @@ struct AstExpr {
 		AstOpBinary *op_binary;
 		AstOpUnary  *op_unary;
 		AstCall     *call;
+		AstTypeAppl *type_appl;
 		AstBind     *bind;
 		AstIndex    *index;
 		AstWith     *with;
