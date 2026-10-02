@@ -54,13 +54,14 @@ static const char *binary_op_str(AstOpKindBinary kind) {
 
 static const char *unary_op_str(AstOpKindUnary kind) {
 	switch (kind) {
-	case AST_OP_UNARY_NOT:    return "!";
-	case AST_OP_UNARY_MINUS:  return "-";
-	case AST_OP_UNARY_UNWRAP: return "?";
-	case AST_OP_UNARY_BORROW: return "&";
-	case AST_OP_UNARY_DEREF:  return "*";
-	case AST_OP_UNARY_MOVE:   return "move";
-	case AST_OP_UNARY_RETURN: return "return";
+	case AST_OP_UNARY_NOT:        return "!";
+	case AST_OP_UNARY_MINUS:      return "-";
+	case AST_OP_UNARY_UNWRAP:     return "?";
+	case AST_OP_UNARY_BORROW:     return "&";
+	case AST_OP_UNARY_BORROW_MUT: return "&mut";
+	case AST_OP_UNARY_DEREF:      return "*";
+	case AST_OP_UNARY_MOVE:       return "move";
+	case AST_OP_UNARY_RETURN:     return "return";
 	}
 }
 

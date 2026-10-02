@@ -451,6 +451,8 @@ static AstExpr *parse_expr_prefix(Parser *parser) {
 	const Token *op = cur_tok;
 	consume(parser, op->kind);
 
+	int is_mut = consume_maybe(parser, TOK_KEY_MUT);
+
 	AstExpr *operand   = parse_expr(parser, bp);
 	AstExpr *base_expr = parser_alloc_one(parser, AstExpr);
 
@@ -464,6 +466,15 @@ static AstExpr *parse_expr_prefix(Parser *parser) {
 	unary->span    = span_span(op->span, operand->span);
 	unary->op      = cast_tok_to_prefix(op->kind);
 	unary->operand = operand;
+
+	// Promote unary borrow to mutable
+	if (is_mut) {
+		if (unary->op == AST_OP_UNARY_BORROW) {
+			unary->op = AST_OP_UNARY_BORROW_MUT;
+		} else {
+			add_diag(&parser->diags, (op+1)->span, "Unexpected `mut` modifier");
+		}
+	}
 
 	base_expr->op_unary = unary;
 	base_expr->span     = unary->span;
