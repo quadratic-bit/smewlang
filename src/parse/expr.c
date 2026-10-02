@@ -76,29 +76,31 @@ static uint8_t get_expr_prefix_bp(TokenKind kind) {
 
 static BindingPower get_expr_infix_bp(TokenKind kind) {
 	switch (kind) {
-	case TOK_SEMICOLON: return (BindingPower){.left = 1,  .right = 2    };
+	case TOK_SEMICOLON:    return (BindingPower){.left = 1,  .right = 2    };
 
-	case TOK_ASSIGN:    return (BindingPower){.left = 5,  .right = 4    };
+	case TOK_ASSIGN:       return (BindingPower){.left = 5,  .right = 4    };
+	case TOK_PLUS_ASSIGN:  return (BindingPower){.left = 5,  .right = 4    };
+	case TOK_MINUS_ASSIGN: return (BindingPower){.left = 5,  .right = 4    };
 
-	case TOK_EQUAL:     return (BindingPower){.left = 6,  .right = 7    };
-	case TOK_NOT_EQUAL: return (BindingPower){.left = 6,  .right = 7    };
+	case TOK_EQUAL:        return (BindingPower){.left = 6,  .right = 7    };
+	case TOK_NOT_EQUAL:    return (BindingPower){.left = 6,  .right = 7    };
 
-	case TOK_GE:        return (BindingPower){.left = 8,  .right = 9    };
-	case TOK_GT:        return (BindingPower){.left = 8,  .right = 9    };
-	case TOK_LE:        return (BindingPower){.left = 8,  .right = 9    };
-	case TOK_LT:        return (BindingPower){.left = 8,  .right = 9    };
+	case TOK_GE:           return (BindingPower){.left = 8,  .right = 9    };
+	case TOK_GT:           return (BindingPower){.left = 8,  .right = 9    };
+	case TOK_LE:           return (BindingPower){.left = 8,  .right = 9    };
+	case TOK_LT:           return (BindingPower){.left = 8,  .right = 9    };
 
-	case TOK_PLUS:      return (BindingPower){.left = 10, .right = 11   };
-	case TOK_MINUS:     return (BindingPower){.left = 10, .right = 11   };
+	case TOK_PLUS:         return (BindingPower){.left = 10, .right = 11   };
+	case TOK_MINUS:        return (BindingPower){.left = 10, .right = 11   };
 
-	case TOK_SLASH:     return (BindingPower){.left = 12, .right = 13   };
-	case TOK_STAR:      return (BindingPower){.left = 12, .right = 13   };
+	case TOK_SLASH:        return (BindingPower){.left = 12, .right = 13   };
+	case TOK_STAR:         return (BindingPower){.left = 12, .right = 13   };
 
-	case TOK_QUESTION:  return (BindingPower){.left = 15, .right = NO_BP};
-	case TOK_LPAREN:    return (BindingPower){.left = 15, .right = 15   };
-	case TOK_LBRACKET:  return (BindingPower){.left = 15, .right = 15   };
+	case TOK_QUESTION:     return (BindingPower){.left = 15, .right = NO_BP};
+	case TOK_LPAREN:       return (BindingPower){.left = 15, .right = 15   };
+	case TOK_LBRACKET:     return (BindingPower){.left = 15, .right = 15   };
 
-	case TOK_DOT:       return (BindingPower){.left = 16, .right = 17   };
+	case TOK_DOT:          return (BindingPower){.left = 16, .right = 17   };
 
 	default:
 		return (BindingPower){.left = NO_BP, .right = NO_BP};
@@ -129,19 +131,21 @@ static AstOpKindUnary cast_tok_to_postfix(TokenKind kind) {
 
 static AstOpKindBinary cast_tok_to_infix(TokenKind kind) {
 	switch (kind) {
-	case TOK_SEMICOLON: return AST_OP_BINARY_SEQ;
-	case TOK_ASSIGN:    return AST_OP_BINARY_ASSIGN;
-	case TOK_EQUAL:     return AST_OP_BINARY_EQ;
-	case TOK_NOT_EQUAL: return AST_OP_BINARY_NEQ;
-	case TOK_GE:        return AST_OP_BINARY_GE;
-	case TOK_GT:        return AST_OP_BINARY_GT;
-	case TOK_LE:        return AST_OP_BINARY_LE;
-	case TOK_LT:        return AST_OP_BINARY_LT;
-	case TOK_PLUS:      return AST_OP_BINARY_PLUS;
-	case TOK_MINUS:     return AST_OP_BINARY_MINUS;
-	case TOK_SLASH:     return AST_OP_BINARY_DIV;
-	case TOK_STAR:      return AST_OP_BINARY_MULT;
-	case TOK_DOT:       return AST_OP_BINARY_ACCESSOR;
+	case TOK_SEMICOLON:    return AST_OP_BINARY_SEQ;
+	case TOK_ASSIGN:       return AST_OP_BINARY_ASSIGN;
+	case TOK_PLUS_ASSIGN:  return AST_OP_BINARY_PLUS_ASSIGN;
+	case TOK_MINUS_ASSIGN: return AST_OP_BINARY_MINUS_ASSIGN;
+	case TOK_EQUAL:        return AST_OP_BINARY_EQ;
+	case TOK_NOT_EQUAL:    return AST_OP_BINARY_NEQ;
+	case TOK_GE:           return AST_OP_BINARY_GE;
+	case TOK_GT:           return AST_OP_BINARY_GT;
+	case TOK_LE:           return AST_OP_BINARY_LE;
+	case TOK_LT:           return AST_OP_BINARY_LT;
+	case TOK_PLUS:         return AST_OP_BINARY_PLUS;
+	case TOK_MINUS:        return AST_OP_BINARY_MINUS;
+	case TOK_SLASH:        return AST_OP_BINARY_DIV;
+	case TOK_STAR:         return AST_OP_BINARY_MULT;
+	case TOK_DOT:          return AST_OP_BINARY_ACCESSOR;
 	default:
 		assert(0 && "Invalid infix cast");
 	}

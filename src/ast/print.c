@@ -36,19 +36,21 @@ static void set_next_sibling(PrintCtx ctx, int has_next) {
 
 static const char *binary_op_str(AstOpKindBinary kind) {
 	switch (kind) {
-	case AST_OP_BINARY_SEQ:      return ";";
-	case AST_OP_BINARY_ACCESSOR: return ".";
-	case AST_OP_BINARY_ASSIGN:   return "=";
-	case AST_OP_BINARY_PLUS:     return "+";
-	case AST_OP_BINARY_MULT:     return "*";
-	case AST_OP_BINARY_DIV:      return "/";
-	case AST_OP_BINARY_MINUS:    return "-";
-	case AST_OP_BINARY_EQ:       return "==";
-	case AST_OP_BINARY_NEQ:      return "!=";
-	case AST_OP_BINARY_GE:       return ">=";
-	case AST_OP_BINARY_GT:       return ">";
-	case AST_OP_BINARY_LE:       return "<=";
-	case AST_OP_BINARY_LT:       return "<";
+	case AST_OP_BINARY_SEQ:          return ";";
+	case AST_OP_BINARY_ACCESSOR:     return ".";
+	case AST_OP_BINARY_ASSIGN:       return "=";
+	case AST_OP_BINARY_PLUS:         return "+";
+	case AST_OP_BINARY_PLUS_ASSIGN:  return "+=";
+	case AST_OP_BINARY_MULT:         return "*";
+	case AST_OP_BINARY_DIV:          return "/";
+	case AST_OP_BINARY_MINUS:        return "-";
+	case AST_OP_BINARY_MINUS_ASSIGN: return "-=";
+	case AST_OP_BINARY_EQ:           return "==";
+	case AST_OP_BINARY_NEQ:          return "!=";
+	case AST_OP_BINARY_GE:           return ">=";
+	case AST_OP_BINARY_GT:           return ">";
+	case AST_OP_BINARY_LE:           return "<=";
+	case AST_OP_BINARY_LT:           return "<";
 	}
 }
 

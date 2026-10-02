@@ -47,8 +47,8 @@ typedef enum {
 	TOK_STAR,           // *
 	TOK_BANG,           // !
 	TOK_ASSIGN,         // =
-	TOK_PLUS_ASSIGN,    // += // TODO: parse
-	TOK_MINUS_ASSIGN,   // -= // TODO: parse
+	TOK_PLUS_ASSIGN,    // +=
+	TOK_MINUS_ASSIGN,   // -=
 
 	TOK_GT,             // >
 	TOK_LT,             // <

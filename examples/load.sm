@@ -42,7 +42,7 @@ pub fn load_score_table(filename: &String) in FileSystem -> Result(ScoreTable, L
                 score: move score
             };
 
-            i = i + 1;
+            i += 1;
         };
 
         ScoreTable.{
