@@ -211,6 +211,22 @@ static AstBind *parse_bind(Parser *parser) {
 	return bind;
 }
 
+static AstWith *parse_with(Parser *parser) {
+	assert(parser->cur->kind == TOK_KEY_WITH && "Unexpected token kind");
+	AstWith *with = parser_alloc_one(parser, AstWith);
+
+	const Token *with_tok = parser->cur;
+	consume(parser, TOK_KEY_WITH);
+
+	AstBind  *bind  = parse_bind(parser);
+	AstBlock *block = parse_block(parser);
+	with->bind = bind;
+	with->body = block;
+	with->span = span_span(with_tok->span, block->span);
+
+	return with;
+}
+
 static AstCondBlock *parse_cond_block(Parser *parser, int is_else) {
 	const Token *start = parser->cur;
 
@@ -322,6 +338,13 @@ static AstLoop *parse_loop(Parser *parser) {
 	return loop;
 }
 
+static AstExpr *new_expr(Parser *parser, AstExprKind kind, Span span) {
+	AstExpr *expr = parser_alloc_one(parser, AstExpr);
+	expr->kind = kind;
+	expr->span = span;
+	return expr;
+}
+
 static AstExpr *parse_expr_prefix(Parser *parser) {
 	const Token *cur_tok = parser->cur;
 
@@ -333,113 +356,86 @@ static AstExpr *parse_expr_prefix(Parser *parser) {
 	}
 
 	if (cur_tok->kind == TOK_IDENTIFIER) {
-		AstIdent *ident     = consume_ident(parser);
-		AstExpr  *base_expr = parser_alloc_one(parser, AstExpr);
+		AstIdent *ident = consume_ident(parser);
 
-		base_expr->kind  = AST_EXPR_IDENT;
-		base_expr->ident = ident;
-		base_expr->span  = ident->span;
+		AstExpr *expr = new_expr(parser, AST_EXPR_IDENT, ident->span);
+		expr->ident = ident;
 
-		return base_expr;
+		return expr;
 	}
 
 	if (cur_tok->kind == TOK_LITERAL_INT) {
-		AstLiteral *lit       = consume_literal_int(parser);
-		AstExpr    *base_expr = parser_alloc_one(parser, AstExpr);
+		AstLiteral *lit = consume_literal_int(parser);
 
-		base_expr->kind    = AST_EXPR_LITERAL;
-		base_expr->literal = lit;
-		base_expr->span    = lit->span;
+		AstExpr *expr = new_expr(parser, AST_EXPR_LITERAL, lit->span);
+		expr->literal = lit;
 
-		return base_expr;
+		return expr;
 	}
 
 	if (cur_tok->kind == TOK_LITERAL_STRING) {
-		AstLiteral *lit       = consume_literal_str(parser);
-		AstExpr    *base_expr = parser_alloc_one(parser, AstExpr);
+		AstLiteral *lit = consume_literal_str(parser);
 
-		base_expr->kind    = AST_EXPR_LITERAL;
-		base_expr->literal = lit;
-		base_expr->span    = lit->span;
+		AstExpr *expr = new_expr(parser, AST_EXPR_LITERAL, lit->span);
+		expr->literal = lit;
 
-		return base_expr;
+		return expr;
 	}
 
 	if (cur_tok->kind == TOK_KEY_UNIT) {
-		AstLiteral *lit       = consume_literal_unit(parser);
-		AstExpr    *base_expr = parser_alloc_one(parser, AstExpr);
+		AstLiteral *lit = consume_literal_unit(parser);
 
-		base_expr->kind    = AST_EXPR_LITERAL;
-		base_expr->literal = lit;
-		base_expr->span    = lit->span;
+		AstExpr *expr = new_expr(parser, AST_EXPR_LITERAL, lit->span);
+		expr->literal = lit;
 
-		return base_expr;
+		return expr;
 	}
 
 	if (cur_tok->kind == TOK_KEY_LET) {
-		AstBind *bind      = parse_bind(parser);
-		AstExpr *base_expr = parser_alloc_one(parser, AstExpr);
+		AstBind *bind = parse_bind(parser);
 
-		base_expr->kind = AST_EXPR_BIND;
-		base_expr->bind = bind;
-		base_expr->span = bind->span;
+		AstExpr *expr = new_expr(parser, AST_EXPR_BIND, bind->span);
+		expr->bind = bind;
 
-		return base_expr;
+		return expr;
 	}
 
 	if (cur_tok->kind == TOK_KEY_WITH) {
-		AstWith *with = parser_alloc_one(parser, AstWith);
-		const Token *with_tok = parser->cur;
-		consume(parser, TOK_KEY_WITH);
+		AstWith *with = parse_with(parser);
 
-		AstBind  *bind  = parse_bind(parser);
-		AstBlock *block = parse_block(parser);
-		with->bind = bind;
-		with->body = block;
-		with->span = span_span(with_tok->span, block->span);
+		AstExpr *expr = new_expr(parser, AST_EXPR_WITH, with->span);
+		expr->with = with;
 
-		AstExpr *base_expr = parser_alloc_one(parser, AstExpr);
-		base_expr->kind = AST_EXPR_WITH;
-		base_expr->with = with;
-		base_expr->span = with->span;
-
-		return base_expr;
+		return expr;
 	}
 
 	if (cur_tok->kind == TOK_KEY_IF) {
-		AstBranch *br        = parse_branch(parser);
-		AstExpr   *base_expr = parser_alloc_one(parser, AstExpr);
+		AstBranch *br = parse_branch(parser);
 
-		base_expr->kind   = AST_EXPR_IF;
-		base_expr->branch = br;
-		base_expr->span   = br->span;
+		AstExpr *expr = new_expr(parser, AST_EXPR_IF, br->span);
+		expr->branch = br;
 
-		return base_expr;
+		return expr;
 	}
 
 	if (cur_tok->kind == TOK_KEY_LOOP) {
-		AstLoop *loop      = parse_loop(parser);
-		AstExpr *base_expr = parser_alloc_one(parser, AstExpr);
+		AstLoop *loop = parse_loop(parser);
 
-		base_expr->kind = AST_EXPR_LOOP;
-		base_expr->loop = loop;
-		base_expr->span = loop->span;
+		AstExpr *expr = new_expr(parser, AST_EXPR_LOOP, loop->span);
+		expr->loop = loop;
 
-		return base_expr;
+		return expr;
 	}
 
 	if (cur_tok->kind == TOK_KEY_BREAK) {
-		AstBreak *brk       = parser_alloc_one(parser, AstBreak);
-		AstExpr  *base_expr = parser_alloc_one(parser, AstExpr);
-
-		brk->span       = cur_tok->span;
-		base_expr->kind = AST_EXPR_BREAK;
-		base_expr->brk  = brk;
-		base_expr->span = brk->span;
-
+		AstBreak *brk  = parser_alloc_one(parser, AstBreak);
+		brk->span = cur_tok->span;
 		consume(parser, TOK_KEY_BREAK);
 
-		return base_expr;
+		AstExpr *expr = new_expr(parser, AST_EXPR_BREAK, brk->span);
+		expr->brk = brk;
+
+		return expr;
 	}
 
 	uint8_t bp = get_expr_prefix_bp(cur_tok->kind);
