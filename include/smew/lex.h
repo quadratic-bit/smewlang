@@ -90,6 +90,8 @@ typedef struct {
 
 Lexer lex(const SourceFile *src);
 
+void print_tokens(const Lexer *lexer);
+
 void lex_free(Lexer *lexer);
 
 const char *token_kind_name(TokenKind kind);

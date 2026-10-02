@@ -8,18 +8,35 @@
 
 #include <assert.h>
 #include <stdio.h>
+#include <string.h>
+
+typedef enum {
+	MODE_LEX,
+	MODE_PARSE,
+} ParsingMode;
 
 int main(int argc, char **argv) {
-	if (argc != 2) {
+	if (argc != 3) {
 		if (argc == 0 || argv[0] == NULL)
-			puts("usage: lex <filename>");
+			puts("usage: lex <lex|parse> <filename>");
 		else
-			printf("usage: %s <filename>\n", argv[0]);
+			printf("usage: %s <lex|parse> <filename>\n", argv[0]);
 
 		return 1;
 	}
 
-	const char *input_filename = argv[1];
+	ParsingMode mode;
+
+	if (!strcmp(argv[1], "lex")) {
+		mode = MODE_LEX;
+	} else if (!strcmp(argv[1], "parse")) {
+		mode = MODE_PARSE;
+	} else {
+		printf("Unrecognized parsing mode: %s\n", argv[1]);
+		return 1;
+	}
+
+	const char *input_filename = argv[2];
 	FILE *input_file = fopen(input_filename, "rb");
 	if (!input_file) {
 		perror("main@fopen");
@@ -47,6 +64,15 @@ int main(int argc, char **argv) {
 		print_diag(&source, diag);
 		printf("\n");
 	}
+
+	if (mode == MODE_LEX) {
+		print_tokens(&lexer);
+		lex_free(&lexer);
+		vec_free(&source.buf);
+		fclose(input_file);
+		return 0;
+	}
+
 	if (lexer.diags.len != 0) {
 		lex_free(&lexer);
 		vec_free(&source.buf);

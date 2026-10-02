@@ -1,5 +1,6 @@
 #include <smew/lex.h>
 
+#include <smew/colors.h>
 #include <smew/diag.h>
 #include <smew/source.h>
 #include <smew/vec.h>
@@ -370,6 +371,21 @@ Lexer lex(const SourceFile *src) {
 
 	lex_emit(&lexer, TOK_EOF, lexer.cur, lexer.cur);
 	return lexer;
+}
+
+void print_tokens(const Lexer *lexer) {
+	for (size_t i = 0; i < lexer->toks.len; ++i) {
+		Token tok = lexer->toks.data[i];
+		printf(CLR_GREEN "%s" CLR_END, token_kind_name(tok.kind));
+		if (tok.kind == TOK_IDENTIFIER  ||
+		    tok.kind == TOK_LITERAL_INT ||
+		    tok.kind == TOK_LITERAL_STRING)
+		{
+			printf("(" CLR_MAGENTA "%.*s" CLR_END ")",
+			       (int)tok.span.len, lexer->src->buf.data + tok.span.start);
+		}
+		putchar('\n');
+	}
 }
 
 void lex_free(Lexer *lexer) {
