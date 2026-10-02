@@ -40,6 +40,8 @@ const char *token_kind_name(TokenKind kind) {
 	case TOK_RBRACKET:       return "BRACKET:R";
 	case TOK_LBRACE:         return "BRACE:L";
 	case TOK_RBRACE:         return "BRACE:R";
+	case TOK_DOT_LBRACE:     return "BRACE:L:DOT";
+	case TOK_COLON_LBRACKET: return "BRACKET:L:COLON";
 	case TOK_ASSIGN:         return "ASSIGN";
 	case TOK_PLUS:           return "PLUS";
 	case TOK_MINUS:          return "MINUS";
@@ -275,13 +277,13 @@ static LexResult consume_token(Lexer *lexer) {
 		kind = TOK_COMMA;
 		break;
 	case '.':
-		kind = TOK_DOT;
+		kind = match_sym(lexer, '{', TOK_DOT_LBRACE, TOK_DOT);
 		break;
 	case '?':
 		kind = TOK_QUESTION;
 		break;
 	case ':':
-		kind = TOK_COLON;
+		kind = match_sym(lexer, '[', TOK_COLON_LBRACKET, TOK_COLON);
 		break;
 	case ';':
 		kind = TOK_SEMICOLON;

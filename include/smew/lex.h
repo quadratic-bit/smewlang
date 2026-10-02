@@ -10,65 +10,68 @@
 typedef enum {
 	TOK_UNK,
 
-	TOK_IDENTIFIER,
+	TOK_IDENTIFIER,     // name
 
-	TOK_KEY_PUB,
-	TOK_KEY_FN,
-	TOK_KEY_IN,
-	TOK_KEY_WITH,
-	TOK_KEY_MUT,
-	TOK_KEY_LOOP,
-	TOK_KEY_BREAK,
-	TOK_KEY_IF,
-	TOK_KEY_ELSE,
-	TOK_KEY_STRUCT,
-	TOK_KEY_RETURN,
-	TOK_KEY_MOVE,
-	TOK_KEY_LET,
-	TOK_KEY_UNIT,
+	TOK_KEY_PUB,        // pub
+	TOK_KEY_FN,         // fn
+	TOK_KEY_IN,         // in
+	TOK_KEY_WITH,       // with
+	TOK_KEY_MUT,        // mut
+	TOK_KEY_LOOP,       // loop
+	TOK_KEY_BREAK,      // break
+	TOK_KEY_IF,         // if
+	TOK_KEY_ELSE,       // else
+	TOK_KEY_STRUCT,     // struct
+	TOK_KEY_RETURN,     // return
+	TOK_KEY_MOVE,       // move
+	TOK_KEY_LET,        // let
+	TOK_KEY_UNIT,       // unit
 
-	TOK_LITERAL_INT,
-	TOK_LITERAL_STRING,
+	TOK_LITERAL_INT,    // 42
+	TOK_LITERAL_STRING, // "str"
 
-	TOK_LPAREN,
-	TOK_RPAREN,
-	TOK_LBRACE,
-	TOK_RBRACE,
-	TOK_LBRACKET,
-	TOK_RBRACKET,
+	TOK_LPAREN,         // (
+	TOK_RPAREN,         // )
+	TOK_LBRACE,         // {
+	TOK_RBRACE,         // }
+	TOK_LBRACKET,       // [
+	TOK_RBRACKET,       // ]
 
-	TOK_PLUS,
-	TOK_MINUS,
-	TOK_PERCENT,
-	TOK_SLASH,
-	TOK_STAR,
-	TOK_BANG,
-	TOK_ASSIGN,
-	TOK_PLUS_ASSIGN,
-	TOK_MINUS_ASSIGN,
+	TOK_DOT_LBRACE,     // .{
+	TOK_COLON_LBRACKET, // :[
 
-	TOK_GT,
-	TOK_LT,
+	TOK_PLUS,           // +
+	TOK_MINUS,          // -
+	TOK_PERCENT,        // %
+	TOK_SLASH,          // /
+	TOK_STAR,           // *
+	TOK_BANG,           // !
+	TOK_ASSIGN,         // =
+	TOK_PLUS_ASSIGN,    // += // TODO: parse
+	TOK_MINUS_ASSIGN,   // -= // TODO: parse
 
-	TOK_GE,
-	TOK_LE,
+	TOK_GT,             // >
+	TOK_LT,             // <
 
-	TOK_EQUAL,
-	TOK_NOT_EQUAL,
-	TOK_AND,
-	TOK_OR,
+	TOK_GE,             // >=
+	TOK_LE,             // <=
 
-	TOK_PIPE,
-	TOK_AMP,
-	TOK_HAT,
+	TOK_EQUAL,          // ==
+	TOK_NOT_EQUAL,      // !=
+	TOK_AND,            // && // TODO: parse
+	TOK_OR,             // || // TODO: parse
 
-	TOK_ARROW,
+	TOK_PIPE,           // | // TODO: parse
+	TOK_AMP,            // & // TODO: parse
+	TOK_HAT,            // ^ // TODO: parse
 
-	TOK_COMMA,
-	TOK_COLON,
-	TOK_DOT,
-	TOK_QUESTION,
-	TOK_SEMICOLON,
+	TOK_ARROW,          // ->
+
+	TOK_COMMA,          // ,
+	TOK_COLON,          // :
+	TOK_DOT,            // .
+	TOK_QUESTION,       // ?
+	TOK_SEMICOLON,      // ;
 
 	TOK_EOF
 } TokenKind;

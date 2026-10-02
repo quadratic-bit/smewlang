@@ -522,11 +522,9 @@ static AstTypeApplArg *parse_type_application_args(Parser *parser) {
 }
 
 static AstTypeAppl *parse_type_application(Parser *parser, AstExpr *base) {
-	assert(parser->cur->kind == TOK_COLON && "Unexpected token kind");
-	assert((parser->cur+1)->kind == TOK_LBRACKET && "Unexpected token kind");
+	assert(parser->cur->kind == TOK_COLON_LBRACKET && "Unexpected token kind");
 
-	consume(parser, TOK_COLON);
-	consume(parser, TOK_LBRACKET);
+	consume(parser, TOK_COLON_LBRACKET);
 
 	AstTypeAppl    *appl = parser_alloc_one(parser, AstTypeAppl);
 	AstTypeApplArg *args;
@@ -594,15 +592,12 @@ static AstLiteralStructField *parse_struct_lit_fields(Parser *parser) {
 }
 
 static AstLiteral *parse_literal_struct(Parser *parser, AstIdent *name) {
-	assert(parser->cur->kind == TOK_DOT && "Unexpected token kind");
-	// XXX: next(parser)
-	assert((parser->cur+1)->kind == TOK_LBRACE && "Unexpected token kind");
+	assert(parser->cur->kind == TOK_DOT_LBRACE && "Unexpected token kind");
 
 	AstLiteral *lit = parser_alloc_one(parser, AstLiteral);
 	lit->kind = AST_LITERAL_STRUCT;
 
-	consume(parser, TOK_DOT);
-	consume(parser, TOK_LBRACE);
+	consume(parser, TOK_DOT_LBRACE);
 
 	AstStructLiteral *struc = parser_alloc_one(parser, AstStructLiteral);
 	struc->type = name;
@@ -627,9 +622,7 @@ static AstLiteral *parse_literal_struct(Parser *parser, AstIdent *name) {
 static AstExpr *parse_expr_infix(Parser *parser, AstExpr *base, uint8_t min_bp) {
 	const Token *op = parser->cur;
 
-	// XXX: unique token
-	if (base->kind == AST_EXPR_IDENT && op->kind == TOK_DOT &&
-	    (parser->cur+1)->kind == TOK_LBRACE) { // XXX: next(parser)
+	if (base->kind == AST_EXPR_IDENT && op->kind == TOK_DOT_LBRACE) {
 		AstLiteral *lit       = parse_literal_struct(parser, base->ident);
 		AstExpr    *base_expr = parser_alloc_one(parser, AstExpr);
 
@@ -640,8 +633,7 @@ static AstExpr *parse_expr_infix(Parser *parser, AstExpr *base, uint8_t min_bp) 
 		return base_expr;
 	}
 
-	// XXX: unique token
-	if (op->kind == TOK_COLON && (parser->cur+1)->kind == TOK_LBRACKET) {
+	if (op->kind == TOK_COLON_LBRACKET) {
 		AstTypeAppl *appl      = parse_type_application(parser, base);
 		AstExpr     *base_expr = parser_alloc_one(parser, AstExpr);
 
