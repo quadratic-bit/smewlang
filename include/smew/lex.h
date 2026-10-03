@@ -61,9 +61,9 @@ typedef enum {
 	TOK_AND,            // &&
 	TOK_OR,             // ||
 
-	TOK_PIPE,           // | // TODO: parse
-	TOK_AMP,            // & // TODO: parse
-	TOK_HAT,            // ^ // TODO: parse
+	TOK_PIPE,           // |
+	TOK_AMP,            // &
+	TOK_HAT,            // ^
 
 	TOK_ARROW,          // ->
 

@@ -43,6 +43,9 @@ static const char *binary_op_str(AstOpKindBinary kind) {
 	case AST_OP_BINARY_PLUS_ASSIGN:  return "+=";
 	case AST_OP_BINARY_MULT:         return "*";
 	case AST_OP_BINARY_DIV:          return "/";
+	case AST_OP_BINARY_BIN_OR:       return "|";
+	case AST_OP_BINARY_BIN_XOR:      return "^";
+	case AST_OP_BINARY_BIN_AND:      return "&";
 	case AST_OP_BINARY_MINUS:        return "-";
 	case AST_OP_BINARY_MINUS_ASSIGN: return "-=";
 	case AST_OP_BINARY_EQ:           return "==";
