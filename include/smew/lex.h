@@ -58,8 +58,8 @@ typedef enum {
 
 	TOK_EQUAL,          // ==
 	TOK_NOT_EQUAL,      // !=
-	TOK_AND,            // && // TODO: parse
-	TOK_OR,             // || // TODO: parse
+	TOK_AND,            // &&
+	TOK_OR,             // ||
 
 	TOK_PIPE,           // | // TODO: parse
 	TOK_AMP,            // & // TODO: parse
