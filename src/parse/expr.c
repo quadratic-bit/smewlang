@@ -170,7 +170,6 @@ static AstOpKindBinary cast_tok_to_infix(TokenKind kind) {
 
 AstExpr *unknown_expr(Parser *parser) {
 	AstExpr *expr = parser_alloc_one(parser, AstExpr);
-	expr->span = parser->cur->span;
 	expr->kind = AST_EXPR_UNKNOWN;
 
 	return expr;
@@ -179,11 +178,11 @@ AstExpr *unknown_expr(Parser *parser) {
 // Synthesized unit (no source representation)
 AstExpr *unit_expr(Parser *parser) {
 	AstExpr *expr = parser_alloc_one(parser, AstExpr);
-	expr->span = zero_span();
 	expr->kind = AST_EXPR_LITERAL;
 
 	AstLiteral *lit = parser_alloc_one(parser, AstLiteral);
 	lit->kind = AST_LITERAL_UNIT;
+	lit->span = zero_span();
 
 	expr->literal = lit;
 
@@ -359,10 +358,9 @@ static AstLoop *parse_loop(Parser *parser) {
 	return loop;
 }
 
-static AstExpr *new_expr(Parser *parser, AstExprKind kind, Span span) {
+static AstExpr *new_expr(Parser *parser, AstExprKind kind) {
 	AstExpr *expr = parser_alloc_one(parser, AstExpr);
 	expr->kind = kind;
-	expr->span = span;
 	return expr;
 }
 
@@ -379,7 +377,7 @@ static AstExpr *parse_expr_prefix(Parser *parser) {
 	if (cur_tok->kind == TOK_IDENTIFIER) {
 		AstIdent *ident = consume_ident(parser);
 
-		AstExpr *expr = new_expr(parser, AST_EXPR_IDENT, ident->span);
+		AstExpr *expr = new_expr(parser, AST_EXPR_IDENT);
 		expr->ident = ident;
 
 		return expr;
@@ -388,7 +386,7 @@ static AstExpr *parse_expr_prefix(Parser *parser) {
 	if (cur_tok->kind == TOK_LITERAL_INT) {
 		AstLiteral *lit = consume_literal_int(parser);
 
-		AstExpr *expr = new_expr(parser, AST_EXPR_LITERAL, lit->span);
+		AstExpr *expr = new_expr(parser, AST_EXPR_LITERAL);
 		expr->literal = lit;
 
 		return expr;
@@ -397,7 +395,7 @@ static AstExpr *parse_expr_prefix(Parser *parser) {
 	if (cur_tok->kind == TOK_LITERAL_STRING) {
 		AstLiteral *lit = consume_literal_str(parser);
 
-		AstExpr *expr = new_expr(parser, AST_EXPR_LITERAL, lit->span);
+		AstExpr *expr = new_expr(parser, AST_EXPR_LITERAL);
 		expr->literal = lit;
 
 		return expr;
@@ -406,7 +404,7 @@ static AstExpr *parse_expr_prefix(Parser *parser) {
 	if (cur_tok->kind == TOK_KEY_UNIT) {
 		AstLiteral *lit = consume_literal_unit(parser);
 
-		AstExpr *expr = new_expr(parser, AST_EXPR_LITERAL, lit->span);
+		AstExpr *expr = new_expr(parser, AST_EXPR_LITERAL);
 		expr->literal = lit;
 
 		return expr;
@@ -415,7 +413,7 @@ static AstExpr *parse_expr_prefix(Parser *parser) {
 	if (cur_tok->kind == TOK_KEY_LET) {
 		AstBind *bind = parse_bind(parser);
 
-		AstExpr *expr = new_expr(parser, AST_EXPR_BIND, bind->span);
+		AstExpr *expr = new_expr(parser, AST_EXPR_BIND);
 		expr->bind = bind;
 
 		return expr;
@@ -424,7 +422,7 @@ static AstExpr *parse_expr_prefix(Parser *parser) {
 	if (cur_tok->kind == TOK_KEY_WITH) {
 		AstWith *with = parse_with(parser);
 
-		AstExpr *expr = new_expr(parser, AST_EXPR_WITH, with->span);
+		AstExpr *expr = new_expr(parser, AST_EXPR_WITH);
 		expr->with = with;
 
 		return expr;
@@ -433,7 +431,7 @@ static AstExpr *parse_expr_prefix(Parser *parser) {
 	if (cur_tok->kind == TOK_KEY_IF) {
 		AstBranch *br = parse_branch(parser);
 
-		AstExpr *expr = new_expr(parser, AST_EXPR_IF, br->span);
+		AstExpr *expr = new_expr(parser, AST_EXPR_IF);
 		expr->branch = br;
 
 		return expr;
@@ -442,7 +440,7 @@ static AstExpr *parse_expr_prefix(Parser *parser) {
 	if (cur_tok->kind == TOK_KEY_LOOP) {
 		AstLoop *loop = parse_loop(parser);
 
-		AstExpr *expr = new_expr(parser, AST_EXPR_LOOP, loop->span);
+		AstExpr *expr = new_expr(parser, AST_EXPR_LOOP);
 		expr->loop = loop;
 
 		return expr;
@@ -453,7 +451,7 @@ static AstExpr *parse_expr_prefix(Parser *parser) {
 		brk->span = cur_tok->span;
 		consume(parser, TOK_KEY_BREAK);
 
-		AstExpr *expr = new_expr(parser, AST_EXPR_BREAK, brk->span);
+		AstExpr *expr = new_expr(parser, AST_EXPR_BREAK);
 		expr->brk = brk;
 
 		return expr;
@@ -480,7 +478,7 @@ static AstExpr *parse_expr_prefix(Parser *parser) {
 	base_expr->kind = AST_EXPR_OP_UNARY;
 
 	AstOpUnary *unary = parser_alloc_one(parser, AstOpUnary);
-	unary->span    = span_span(op->span, operand->span);
+	unary->span    = span_span(op->span, operand->any->span);
 	unary->op      = cast_tok_to_prefix(op->kind);
 	unary->operand = operand;
 
@@ -494,7 +492,6 @@ static AstExpr *parse_expr_prefix(Parser *parser) {
 	}
 
 	base_expr->op_unary = unary;
-	base_expr->span     = unary->span;
 
 	return base_expr;
 }
@@ -562,7 +559,7 @@ static AstTypeAppl *parse_type_application(Parser *parser, AstExpr *base) {
 
 	appl->args   = args;
 	appl->applicant = base;
-	appl->span   = span_span(base->span, parser->cur->span);
+	appl->span   = span_span(base->any->span, parser->cur->span);
 
 	return appl;
 }
@@ -649,7 +646,6 @@ static AstExpr *parse_expr_infix(Parser *parser, AstExpr *base, uint8_t min_bp) 
 
 		base_expr->kind    = AST_EXPR_LITERAL;
 		base_expr->literal = lit;
-		base_expr->span    = lit->span;
 
 		return base_expr;
 	}
@@ -660,7 +656,6 @@ static AstExpr *parse_expr_infix(Parser *parser, AstExpr *base, uint8_t min_bp) 
 
 		base_expr->kind      = AST_EXPR_TYPE_APPLY;
 		base_expr->type_appl = appl;
-		base_expr->span      = appl->span;
 
 		return base_expr;
 	}
@@ -677,12 +672,11 @@ static AstExpr *parse_expr_infix(Parser *parser, AstExpr *base, uint8_t min_bp) 
 		new_base->kind    = AST_EXPR_OP_UNARY;
 
 		AstOpUnary *unary = parser_alloc_one(parser, AstOpUnary);
-		unary->span    = span_span(base->span, op->span);
+		unary->span    = span_span(base->any->span, op->span);
 		unary->op      = cast_tok_to_postfix(op->kind);
 		unary->operand = base;
 
 		new_base->op_unary = unary;
-		new_base->span     = unary->span;
 
 		return new_base;
 	}
@@ -707,10 +701,9 @@ static AstExpr *parse_expr_infix(Parser *parser, AstExpr *base, uint8_t min_bp) 
 
 		call->callee = base;
 		call->args   = args;
-		call->span   = span_span(base->span, parser->cur->span);
+		call->span   = span_span(base->any->span, parser->cur->span);
 
 		new_base->call = call;
-		new_base->span = call->span;
 
 		return new_base;
 	}
@@ -731,9 +724,8 @@ static AstExpr *parse_expr_infix(Parser *parser, AstExpr *base, uint8_t min_bp) 
 
 		consume_or_insert(parser, TOK_RBRACKET, "closing bracket");
 
-		index->span     = span_span(base->span, parser->cur->span);
+		index->span     = span_span(base->any->span, parser->cur->span);
 		new_base->index = index;
-		new_base->span  = index->span;
 		return new_base;
 	}
 
@@ -752,9 +744,9 @@ static AstExpr *parse_expr_infix(Parser *parser, AstExpr *base, uint8_t min_bp) 
 			                  "Unexpected token in binary expression", "rhs");
 			binary->right = unknown_expr(parser);
 		}
-		binary->span  = span_span(base->span, op->span);
+		binary->span  = span_span(base->any->span, op->span);
 	} else {
-		binary->span  = span_span(base->span, operand->span);
+		binary->span  = span_span(base->any->span, operand->any->span);
 		binary->right = operand;
 	}
 
@@ -762,7 +754,6 @@ static AstExpr *parse_expr_infix(Parser *parser, AstExpr *base, uint8_t min_bp) 
 	binary->left = base;
 
 	new_base->op_binary = binary;
-	new_base->span      = binary->span;
 
 	return new_base;
 }
@@ -793,9 +784,9 @@ int parse_and_sequence(Parser *parser, AstExpr **base) {
 
 	if (*base == NULL) {
 		*base = unit_expr(parser);
-		seq->span = right->span;
+		seq->span = right->any->span;
 	} else {
-		seq->span = span_span((*base)->span, right->span);
+		seq->span = span_span((*base)->any->span, right->any->span);
 	}
 
 	seq->left  = *base;
@@ -805,7 +796,6 @@ int parse_and_sequence(Parser *parser, AstExpr **base) {
 	new_base->kind    = AST_EXPR_OP_BINARY;
 
 	new_base->op_binary = seq;
-	new_base->span      = seq->span;
 
 	*base = new_base;
 	return 1;

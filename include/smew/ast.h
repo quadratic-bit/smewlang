@@ -221,10 +221,11 @@ typedef enum {
 } AstExprKind;
 
 struct AstExpr {
-	Span span;
 	AstExprKind kind;
 
 	union {
+		struct { Span span; } *any;
+
 		AstBranch   *branch;
 		AstLoop     *loop;
 		AstOpBinary *op_binary;
