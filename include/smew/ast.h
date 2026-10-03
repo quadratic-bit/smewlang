@@ -276,8 +276,14 @@ typedef struct {
 	AstFunctionParam   *params;
 	AstFunctionContext *contexts;
 	AstFunctionGeneric *generics;
+
 	AstType  *return_type;
-	AstBlock *block;
+} AstFunctionDeclaration;
+
+typedef struct {
+	Span span;
+	AstFunctionDeclaration *decl;
+	AstBlock *def;
 } AstFunction;
 
 typedef struct AstStructField AstStructField;

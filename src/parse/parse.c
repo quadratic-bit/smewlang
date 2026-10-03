@@ -254,21 +254,25 @@ static AstFunction *parse_def_func(Parser *parser) {
 
 	const Token *start_tok = parser->cur;
 
-	AstFunction *func_def = parser_alloc_one(parser, AstFunction);
-	func_def->params   = NULL;
-	func_def->generics = NULL;
-	func_def->contexts = NULL;
+	AstFunctionDeclaration *func_decl = parser_alloc_one(parser, AstFunctionDeclaration);
+	AstFunction            *func_def  = parser_alloc_one(parser, AstFunction);
 
-	func_def->is_public = consume_maybe(parser, TOK_KEY_PUB);
+	func_def->decl = func_decl;
+
+	func_decl->params   = NULL;
+	func_decl->generics = NULL;
+	func_decl->contexts = NULL;
+
+	func_decl->is_public = consume_maybe(parser, TOK_KEY_PUB);
 	consume_or_insert(parser, TOK_KEY_FN, "`fn` keyword");
 
 	if (parser->cur->kind == TOK_IDENTIFIER) {
-		func_def->name = consume_ident(parser);
+		func_decl->name = consume_ident(parser);
 	} else {
 		add_diag_expected(&parser->diags, parser->cur->span,
 		                  "Unexpected token", "identifier");
 
-		func_def->name = unknown_ident(parser);
+		func_decl->name = unknown_ident(parser);
 
 		while (parser->cur->kind != TOK_LPAREN &&
 		       parser->cur->kind != TOK_LBRACE &&
@@ -277,9 +281,9 @@ static AstFunction *parse_def_func(Parser *parser) {
 		}
 
 		if (guard_eof(parser)) {
-			func_def->span        = span_span(start_tok->span, prev(parser)->span);
-			func_def->block       = empty_block (parser);
-			func_def->return_type = unknown_type(parser);
+			func_def ->span        = span_span(start_tok->span, prev(parser)->span);
+			func_def ->def         = empty_block (parser);
+			func_decl->return_type = unknown_type(parser);
 			return func_def;
 		}
 	}
@@ -287,7 +291,7 @@ static AstFunction *parse_def_func(Parser *parser) {
 	if (parser->cur->kind == TOK_LBRACKET) {
 		consume(parser, TOK_LBRACKET);
 		if (parser->cur->kind != TOK_RBRACKET) {
-			func_def->generics = parse_func_generics(parser);
+			func_decl->generics = parse_func_generics(parser);
 			consume_or_insert(parser, TOK_RBRACKET, "closing bracket");
 		} else {
 			consume(parser, TOK_RBRACKET);
@@ -297,7 +301,7 @@ static AstFunction *parse_def_func(Parser *parser) {
 		consume(parser, TOK_LPAREN);
 
 		if (parser->cur->kind != TOK_RPAREN) {
-			func_def->params = parse_func_params(parser);
+			func_decl->params = parse_func_params(parser);
 		}
 
 		consume_or_insert(parser, TOK_RPAREN, "closing parenthesis");
@@ -308,12 +312,12 @@ static AstFunction *parse_def_func(Parser *parser) {
 
 	if (parser->cur->kind == TOK_KEY_IN) {
 		consume(parser, TOK_KEY_IN);
-		func_def->contexts = parse_func_contexts(parser);
+		func_decl->contexts = parse_func_contexts(parser);
 	}
 
 	consume_or_insert(parser, TOK_ARROW, "arrow");
 
-	func_def->return_type = parse_type(parser, MIN_BP);
+	func_decl->return_type = parse_type(parser, MIN_BP);
 
 	if (parser->cur->kind != TOK_LBRACE) {
 		add_diag_expected(&parser->diags, parser->cur->span,
@@ -322,14 +326,14 @@ static AstFunction *parse_def_func(Parser *parser) {
 			parser->cur++;
 		}
 		if (parser->cur->kind != TOK_LBRACE) {
-			func_def->block = empty_block(parser);
-			func_def->span  = span_span(start_tok->span, parser->cur->span);
+			func_def->def  = empty_block(parser);
+			func_def->span = span_span(start_tok->span, parser->cur->span);
 			return func_def;
 		}
 	}
 
-	func_def->block = parse_block(parser);
-	func_def->span  = span_span(start_tok->span, func_def->block->span);
+	func_def->def  = parse_block(parser);
+	func_def->span = span_span(start_tok->span, func_def->def->span);
 
 	return func_def;
 }

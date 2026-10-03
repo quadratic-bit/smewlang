@@ -514,7 +514,7 @@ static void print_func_param(PrintCtx ctx, const AstFunctionParam *param) {
 
 static void print_func(PrintCtx ctx, const AstFunction *func) {
 	print_tab(ctx);
-	if (func->is_public) {
+	if (func->decl->is_public) {
 		printf(CLR_CYAN "PUB " CLR_END);
 	}
 	printf(CLR_GREEN "FUNCTION" CLR_END "\n");
@@ -523,18 +523,18 @@ static void print_func(PrintCtx ctx, const AstFunction *func) {
 
 	print_tab(deep(ctx, +1));
 	printf(CLR_GREEN "NAME " CLR_END);
-	print_ident(ctx, func->name);
+	print_ident(ctx, func->decl->name);
 	putchar('\n');
 
 	print_tab(deep(ctx, +1));
 	printf(CLR_GREEN "RETURNS" CLR_END "\n");
-	print_type(deep(ctx, +2), func->return_type);
+	print_type(deep(ctx, +2), func->decl->return_type);
 
-	if (func->contexts != NULL) {
+	if (func->decl->contexts != NULL) {
 		print_tab(deep(ctx, +1));
 		printf(CLR_GREEN "CONTEXTS" CLR_END "\n");
 
-		AstFunctionContext *context = func->contexts;
+		AstFunctionContext *context = func->decl->contexts;
 		while (context != NULL) {
 			print_tab(deep(ctx, +2));
 			print_ident(ctx, context->name);
@@ -543,11 +543,11 @@ static void print_func(PrintCtx ctx, const AstFunction *func) {
 		}
 	}
 
-	if (func->generics != NULL) {
+	if (func->decl->generics != NULL) {
 		print_tab(deep(ctx, +1));
 		printf(CLR_GREEN "GENERIC PARAMS" CLR_END "\n");
 
-		AstFunctionGeneric *generic = func->generics;
+		AstFunctionGeneric *generic = func->decl->generics;
 		while (generic != NULL) {
 			print_tab(deep(ctx, +2));
 			print_ident(ctx, generic->name);
@@ -556,7 +556,7 @@ static void print_func(PrintCtx ctx, const AstFunction *func) {
 		}
 	}
 
-	AstFunctionParam *param = func->params;
+	AstFunctionParam *param = func->decl->params;
 	while (param != NULL) {
 		print_func_param(deep(ctx, +1), param);
 		param = param->next;
@@ -566,7 +566,7 @@ static void print_func(PrintCtx ctx, const AstFunction *func) {
 
 	print_tab(deep(ctx, +1));
 	printf(CLR_GREEN "BLOCK" CLR_END "\n");
-	print_expr(deep(ctx, +2), func->block->body);
+	print_expr(deep(ctx, +2), func->def->body);
 }
 
 static void print_item(PrintCtx ctx, const AstItem *item) {
