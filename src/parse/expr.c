@@ -78,9 +78,11 @@ static uint8_t get_expr_prefix_bp(TokenKind kind) {
 	}
 }
 
+static uint8_t BINDING_SEMICOLON = 1;
+
 static BindingPower get_expr_infix_bp(TokenKind kind) {
 	switch (kind) {
-	case TOK_SEMICOLON:    return (BindingPower){1, 2};
+	case TOK_SEMICOLON:    return (BindingPower){BINDING_SEMICOLON, BINDING_SEMICOLON + 1};
 
 	case TOK_ASSIGN:
 	case TOK_PLUS_ASSIGN:
@@ -217,7 +219,7 @@ static AstBind *parse_bind(Parser *parser) {
 
 	consume_or_insert(parser, TOK_ASSIGN, "assignment");
 
-	bind->value = parse_expr(parser, 4); // XXX: magic number + brittle + L + bozo
+	bind->value = parse_expr(parser, BINDING_SEMICOLON + 3);
 
 	if (bind->value == NULL) {
 		add_diag_expected(&parser->diags, parser->cur->span,
