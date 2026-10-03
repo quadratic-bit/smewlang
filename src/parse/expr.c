@@ -249,6 +249,29 @@ static AstWith *parse_with(Parser *parser) {
 	return with;
 }
 
+static AstBlock *parse_expected_block(Parser *parser, const char *message) {
+	if (parser->cur->kind == TOK_LBRACE) {
+		return parse_block(parser);
+	}
+
+	add_diag_expected(&parser->diags, parser->cur->span, message, "opening brace");
+
+	while (parser->cur->kind != TOK_LBRACE &&
+	       parser->cur->kind != TOK_RBRACE &&
+	       parser->cur->kind != TOK_EOF)
+	{
+		parser->cur++;
+	}
+
+	if (parser->cur->kind != TOK_LBRACE) {
+		AstBlock *block = empty_block(parser);
+		block->span = parser->cur->span;
+		return block;
+	}
+
+	return parse_block(parser);
+}
+
 static AstCondBlock *parse_cond_block(Parser *parser, int is_else) {
 	const Token *start = parser->cur;
 
@@ -267,25 +290,7 @@ static AstCondBlock *parse_cond_block(Parser *parser, int is_else) {
 		}
 	}
 
-	if (parser->cur->kind != TOK_LBRACE) {
-		add_diag_expected(&parser->diags, parser->cur->span,
-		                  "Unexpected token after branch condition", "opening brace");
-
-		while (parser->cur->kind != TOK_LBRACE &&
-		       parser->cur->kind != TOK_RBRACE &&
-		       parser->cur->kind != TOK_EOF)
-		{
-			parser->cur++;
-		}
-
-		if (parser->cur->kind != TOK_LBRACE) {
-			cond_block->block = empty_block(parser);
-			cond_block->span  = span_span(start->span, parser->cur->span);
-			return cond_block;
-		}
-	}
-
-	cond_block->block = parse_block(parser);
+	cond_block->block = parse_expected_block(parser, "Unexpected token after branch condition");
 	cond_block->span  = span_span(start->span, cond_block->block->span);
 
 	return cond_block;
@@ -336,27 +341,9 @@ static AstLoop *parse_loop(Parser *parser) {
 
 	AstLoop *loop = parser_alloc_one(parser, AstLoop);
 
-	if (parser->cur->kind != TOK_LBRACE) {
-		add_diag_expected(&parser->diags, parser->cur->span,
-		                  "Unexpected token after `loop`", "opening brace");
-
-		while (parser->cur->kind != TOK_LBRACE &&
-		       parser->cur->kind != TOK_RBRACE &&
-		       parser->cur->kind != TOK_EOF)
-		{
-			parser->cur++;
-		}
-
-		// XXX: code duplication from `parse_branch`
-		if (parser->cur->kind != TOK_LBRACE) {
-			loop->body = empty_block(parser);
-			loop->span = span_span(loop_tok->span, parser->cur->span);
-			return loop;
-		}
-	}
-
-	loop->body = parse_block(parser);
+	loop->body = parse_expected_block(parser, "Unexpected token after `loop`");
 	loop->span = span_span(loop_tok->span, loop->body->span);
+
 	return loop;
 }
 
