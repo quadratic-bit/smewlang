@@ -4,7 +4,8 @@
 #include <smew/parse.h>
 #include <smew/ast.h>
 
-AstFunctionDeclaration *parse_func_decl(Parser *parser);
-AstFunction            *parse_func_def (Parser *parser);
+AstFunctionDeclaration *parse_func_decl         (Parser *parser);
+void                    parse_func_def_with_decl(Parser *parser, AstFunction *func_def);
+AstFunction            *parse_func_def          (Parser *parser);
 
 #endif

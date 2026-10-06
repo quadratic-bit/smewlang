@@ -2,6 +2,7 @@
 
 #include "func.h"
 #include "parse.h"
+#include "trait.h"
 #include "type.h"
 
 #include <smew/arena.h>
@@ -117,6 +118,7 @@ int is_item_start(TokenKind kind) {
 	return kind == TOK_KEY_FN     ||
 	       kind == TOK_KEY_STRUCT ||
 	       kind == TOK_KEY_PUB    ||
+	       kind == TOK_KEY_TRAIT  ||
 	       kind == TOK_EOF;
 }
 
@@ -199,8 +201,16 @@ static AstItem *parse_item(Parser *parser) {
 		item->span     = item->function->span;
 		break;
 
+	case TOK_KEY_TRAIT:
+		item->kind  = AST_ITEM_TRAIT;
+		item->trait = parse_trait(parser);
+		item->span  = item->trait->span;
+		break;
+
 	default:
-		assert(0 && "Unimplemented item");
+		add_diag_expected(&parser->diags, parser->cur->span, "Unexpected token", "item");
+		item->kind = AST_ITEM_UNKNOWN;
+		parser->cur++;
 	}
 	return item;
 }

@@ -294,6 +294,25 @@ struct AstStructField {
 	AstStructField *next;
 };
 
+typedef struct AstTraitFunction AstTraitFunction;
+struct AstTraitFunction {
+	AstTraitFunction *next;
+	AstFunction      *func;
+};
+
+typedef struct AstTraitReq AstTraitReq;
+struct AstTraitReq {
+	AstIdent    *name;
+	AstTraitReq *next;
+};
+
+typedef struct {
+	Span span;
+	AstIdent         *name;
+	AstTraitReq      *reqs;
+	AstTraitFunction *funcs;
+} AstTrait;
+
 typedef struct {
 	Span      span;
 	AstIdent *name;
@@ -301,7 +320,9 @@ typedef struct {
 } AstStruct;
 
 typedef enum {
+	AST_ITEM_UNKNOWN,
 	AST_ITEM_FUNCTION,
+	AST_ITEM_TRAIT,
 	AST_ITEM_STRUCT,
 } AstItemKind;
 
@@ -312,6 +333,7 @@ typedef struct {
 	union {
 		AstFunction *function;
 		AstStruct   *struc;
+		AstTrait    *trait;
 	};
 } AstItem;
 

@@ -143,15 +143,10 @@ AstFunctionDeclaration *parse_func_decl(Parser *parser) {
 	return func_decl;
 }
 
-AstFunction *parse_func_def(Parser *parser) {
-	const Token *start_tok = parser->cur;
-
-	AstFunction *func_def = parser_alloc_one(parser, AstFunction);
-	func_def->decl = parse_func_decl(parser);
-
+void parse_func_def_with_decl(Parser *parser, AstFunction *func_def) {
 	if (guard_eof(parser)) {
 		func_def->span = func_def->decl->span;
-		return func_def;
+		return;
 	}
 
 	if (parser->cur->kind != TOK_LBRACE) {
@@ -162,14 +157,18 @@ AstFunction *parse_func_def(Parser *parser) {
 		}
 		if (parser->cur->kind != TOK_LBRACE) {
 			func_def->def  = empty_block(parser);
-			func_def->span = span_span(start_tok->span, parser->cur->span);
-			return func_def;
+			func_def->span = span_span(func_def->decl->span, parser->cur->span);
+			return;
 		}
 	}
 
 	func_def->def  = parse_block(parser);
-	func_def->span = span_span(start_tok->span, func_def->def->span);
-
-	return func_def;
+	func_def->span = span_span(func_def->decl->span, func_def->def->span);
 }
 
+AstFunction *parse_func_def(Parser *parser) {
+	AstFunction *func_def = parser_alloc_one(parser, AstFunction);
+	func_def->decl = parse_func_decl(parser);
+	parse_func_def_with_decl(parser, func_def);
+	return func_def;
+}

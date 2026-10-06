@@ -1,0 +1,13 @@
+trait Display {
+    fn display(self: &Self) in Formatter -> Result(Unit, FormatError);
+}
+
+trait Equal {
+    fn equal(self: &Self, other: &Self) -> bool;
+}
+
+trait Named {
+    fn name(self: &Self) -> &String {
+        "<unnamed>"
+    };
+}

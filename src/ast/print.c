@@ -558,9 +558,15 @@ static void print_func(PrintCtx ctx, const AstFunction *func) {
 
 	AstFunctionParam *param = func->decl->params;
 	while (param != NULL) {
+		if (param->next == NULL && func->def == NULL) {
+			set_next_sibling(ctx, 0);
+		}
+
 		print_func_param(deep(ctx, +1), param);
 		param = param->next;
 	}
+
+	if (func->def == NULL) return;
 
 	set_next_sibling(ctx, 0);
 
@@ -569,13 +575,45 @@ static void print_func(PrintCtx ctx, const AstFunction *func) {
 	print_expr(deep(ctx, +2), func->def->body);
 }
 
+static void print_trait(PrintCtx ctx, const AstTrait *trait) {
+	print_tab(ctx);
+	printf(CLR_GREEN "TRAIT" CLR_END "\n");
+
+	print_tab(deep(ctx, +1));
+	printf(CLR_GREEN "NAME " CLR_END);
+	print_ident(ctx, trait->name);
+	putchar('\n');
+
+	print_tab(deep(ctx, +1));
+	printf(CLR_GREEN "MEMBERS" CLR_END "\n");
+
+	set_next_sibling(deep(ctx, +1), 1);
+
+	AstTraitFunction *func = trait->funcs;
+	while (func != NULL) {
+		if (func->next == NULL) {
+			set_next_sibling(deep(ctx, +1), 0);
+		}
+		print_func(deep(ctx, +2), func->func);
+		func = func->next;
+	}
+	set_next_sibling(deep(ctx, +1), 0);
+}
+
 static void print_item(PrintCtx ctx, const AstItem *item) {
 	switch (item->kind) {
+	case AST_ITEM_UNKNOWN:
+		print_tab(ctx);
+		printf(CLR_RED "<UNK>" CLR_END "\n");
+		break;
 	case AST_ITEM_FUNCTION:
 		print_func(ctx, item->function);
 		break;
 	case AST_ITEM_STRUCT:
 		print_struct(ctx, item->struc);
+		break;
+	case AST_ITEM_TRAIT:
+		print_trait(ctx, item->trait);
 		break;
 	}
 }
