@@ -28,6 +28,8 @@ const Token *prev(const Parser *parser);
 
 int guard_eof(Parser *parser);
 
+int is_item_start(TokenKind kind);
+
 void      consume          (Parser *parser, TokenKind expect);
 int       consume_maybe    (Parser *parser, TokenKind expected);
 int       consume_or_insert(Parser *parser, TokenKind expect, const char *expect_str);
