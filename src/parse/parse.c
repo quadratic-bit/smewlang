@@ -195,7 +195,7 @@ static AstItem *parse_item(Parser *parser) {
 	case TOK_KEY_PUB:
 	case TOK_KEY_FN:
 		item->kind     = AST_ITEM_FUNCTION;
-		item->function = parse_def_func(parser);
+		item->function = parse_func_def(parser);
 		item->span     = item->function->span;
 		break;
 

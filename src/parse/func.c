@@ -73,23 +73,20 @@ static AstFunctionGeneric *parse_func_generics(Parser *parser) {
 	return generic;
 }
 
-AstFunction *parse_def_func(Parser *parser) {
+AstFunctionDeclaration *parse_func_decl(Parser *parser) {
 	assert((parser->cur->kind == TOK_KEY_PUB ||
-	        parser->cur->kind == TOK_KEY_FN) && "Function must start with `fn` or `pub");
+	        parser->cur->kind == TOK_KEY_FN) &&
+	        "Function declaration must start with `fn` or `pub`");
 
-	const Token *start_tok = parser->cur;
+	const Token *decl_start_tok = parser->cur;
 
 	AstFunctionDeclaration *func_decl = parser_alloc_one(parser, AstFunctionDeclaration);
-	AstFunction            *func_def  = parser_alloc_one(parser, AstFunction);
-
-	func_def->decl = func_decl;
-
 	func_decl->params   = NULL;
 	func_decl->generics = NULL;
 	func_decl->contexts = NULL;
 
 	func_decl->is_public = consume_maybe(parser, TOK_KEY_PUB);
-	consume_or_insert(parser, TOK_KEY_FN, "`fn` keyword");
+	consume_or_insert(parser, TOK_KEY_FN, "`fn` keyword after `pub`");
 
 	if (parser->cur->kind == TOK_IDENTIFIER) {
 		func_decl->name = consume_ident(parser);
@@ -106,22 +103,22 @@ AstFunction *parse_def_func(Parser *parser) {
 		}
 
 		if (guard_eof(parser)) {
-			func_def ->span        = span_span(start_tok->span, prev(parser)->span);
-			func_def ->def         = empty_block (parser);
 			func_decl->return_type = unknown_type(parser);
-			return func_def;
+			func_decl->span = span_span(decl_start_tok->span, parser->cur->span);
+			return func_decl;
 		}
 	}
 
 	if (parser->cur->kind == TOK_LBRACKET) {
 		consume(parser, TOK_LBRACKET);
+
 		if (parser->cur->kind != TOK_RBRACKET) {
 			func_decl->generics = parse_func_generics(parser);
-			consume_or_insert(parser, TOK_RBRACKET, "closing bracket");
-		} else {
-			consume(parser, TOK_RBRACKET);
 		}
+
+		consume_or_insert(parser, TOK_RBRACKET, "closing bracket");
 	}
+
 	if (parser->cur->kind == TOK_LPAREN) {
 		consume(parser, TOK_LPAREN);
 
@@ -143,6 +140,19 @@ AstFunction *parse_def_func(Parser *parser) {
 	consume_or_insert(parser, TOK_ARROW, "arrow");
 
 	func_decl->return_type = parse_type(parser, MIN_BP);
+	return func_decl;
+}
+
+AstFunction *parse_func_def(Parser *parser) {
+	const Token *start_tok = parser->cur;
+
+	AstFunction *func_def = parser_alloc_one(parser, AstFunction);
+	func_def->decl = parse_func_decl(parser);
+
+	if (guard_eof(parser)) {
+		func_def->span = func_def->decl->span;
+		return func_def;
+	}
 
 	if (parser->cur->kind != TOK_LBRACE) {
 		add_diag_expected(&parser->diags, parser->cur->span,
