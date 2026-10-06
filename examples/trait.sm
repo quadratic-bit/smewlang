@@ -11,3 +11,9 @@ trait Named {
         "<unnamed>"
     };
 }
+
+trait Printable: Display, Named {
+    fn print(self: &Self) in Formatter -> Result(Unit, FormatError) {
+        self.display()
+    };
+}

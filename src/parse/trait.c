@@ -31,6 +31,21 @@ AstTrait *parse_trait(Parser *parser) {
 		}
 	}
 
+	if (parser->cur->kind == TOK_COLON) {
+		consume(parser, TOK_COLON);
+		AstTraitReq **tail = &trait->reqs;
+		while (parser->cur->kind == TOK_IDENTIFIER) {
+			*tail = parser_alloc_one(parser, AstTraitReq);
+			(*tail)->name = consume_ident(parser);
+			(*tail)->next = NULL;
+			tail = &(*tail)->next;
+			if (parser->cur->kind != TOK_COMMA) {
+				break;
+			}
+			consume(parser, TOK_COMMA);
+		}
+	}
+
 	if (parser->cur->kind != TOK_LBRACE) {
 		add_diag_expected(&parser->diags, parser->cur->span,
 		                  "Unexpected token", "opening brace");

@@ -584,6 +584,29 @@ static void print_trait(PrintCtx ctx, const AstTrait *trait) {
 	print_ident(ctx, trait->name);
 	putchar('\n');
 
+	if (trait->funcs != NULL) {
+		set_next_sibling(ctx, 1);
+	}
+
+	if (trait->reqs != NULL) {
+		print_tab(deep(ctx, +1));
+		printf(CLR_GREEN "REQUIREMENTS" CLR_END "\n");
+
+		set_next_sibling(deep(ctx, +1), 1);
+		AstTraitReq *req = trait->reqs;
+		while (req != NULL) {
+			print_tab(deep(ctx, +2));
+			print_ident(ctx, req->name);
+			putchar('\n');
+			req = req->next;
+		}
+		set_next_sibling(deep(ctx, +1), 0);
+	}
+
+	if (trait->funcs == NULL) return;
+
+	set_next_sibling(ctx, 0);
+
 	print_tab(deep(ctx, +1));
 	printf(CLR_GREEN "MEMBERS" CLR_END "\n");
 
