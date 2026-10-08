@@ -123,7 +123,7 @@ static AstType *parse_type_postfix(Parser *parser, AstType *base, uint8_t min_bp
 	return NULL;
 }
 
-static AstTypeList *parse_type_list(Parser *parser) {
+AstTypeList *parse_type_list(Parser *parser) {
 	AstTypeList  *args = NULL;
 	AstTypeList **tail = &args;
 

@@ -319,11 +319,27 @@ typedef struct {
 	AstStructField *fields;
 } AstStruct;
 
+typedef struct AstEnumMember AstEnumMember;
+struct AstEnumMember {
+	Span            span;
+	AstIdent       *name;
+	AstTypeList    *payload;
+	AstEnumMember  *next;
+};
+
+typedef struct {
+	Span            span;
+	AstIdent       *name;
+	AstGenericList *generics;
+	AstEnumMember  *members;
+} AstEnum;
+
 typedef enum {
 	AST_ITEM_UNKNOWN,
 	AST_ITEM_FUNCTION,
 	AST_ITEM_TRAIT,
 	AST_ITEM_STRUCT,
+	AST_ITEM_ENUM,
 } AstItemKind;
 
 typedef struct {
@@ -334,6 +350,7 @@ typedef struct {
 		AstFunction *function;
 		AstStruct   *struc;
 		AstTrait    *trait;
+		AstEnum     *enumer;
 	};
 } AstItem;
 

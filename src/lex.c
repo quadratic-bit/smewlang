@@ -24,6 +24,7 @@ const char *token_kind_name(TokenKind kind) {
 	case TOK_KEY_FN:         return "KEYWORD:FN";
 	case TOK_KEY_IN:         return "KEYWORD:IN";
 	case TOK_KEY_TRAIT:      return "KEYWORD:TRAIT";
+	case TOK_KEY_ENUM:       return "KEYWORD:ENUM";
 	case TOK_KEY_WITH:       return "KEYWORD:WITH";
 	case TOK_KEY_MUT:        return "KEYWORD:MUT";
 	case TOK_KEY_LOOP:       return "KEYWORD:LOOP";
@@ -201,6 +202,7 @@ static TokenKind try_keyword_cast(const Lexer *lexer, size_t start) {
 	if (compare_span(tok, tok_len, "fn"    )) return TOK_KEY_FN;
 	if (compare_span(tok, tok_len, "in"    )) return TOK_KEY_IN;
 	if (compare_span(tok, tok_len, "trait" )) return TOK_KEY_TRAIT;
+	if (compare_span(tok, tok_len, "enum"  )) return TOK_KEY_ENUM;
 	if (compare_span(tok, tok_len, "struct")) return TOK_KEY_STRUCT;
 	if (compare_span(tok, tok_len, "return")) return TOK_KEY_RETURN;
 	if (compare_span(tok, tok_len, "move"  )) return TOK_KEY_MOVE;

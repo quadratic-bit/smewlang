@@ -1,0 +1,45 @@
+enum Direction {
+    North,
+    South,
+    East,
+    West
+}
+
+enum Option[T] {
+    None,
+    Some(T)
+}
+
+enum Result[T, E] {
+    Ok(T),
+    Err(E)
+}
+
+enum Message {
+    Quit,
+    Move(int32, int32),
+    Write(&String),
+    Data(Byte[]),
+    Failure(Result(Unit, String))
+}
+
+enum Storage[T] {
+    Empty,
+    Inline(T),
+    Heap(T*),
+    Borrowed(&T),
+    Array(T[]),
+    Fixed(T[16])
+}
+
+enum List[T] {
+    Nil,
+    Cons(T, List(T)*)
+}
+
+enum Operation[T, E] {
+    Pending,
+    Completed(Option(T)),
+    Failed(Result(T, E)),
+    Batch(Option(Result(T, E))[])
+}

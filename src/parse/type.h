@@ -9,4 +9,6 @@
 AstType *unknown_type(Parser *parser);
 AstType *parse_type  (Parser *parser, uint8_t min_bp);
 
+AstTypeList *parse_type_list(Parser *parser);
+
 #endif

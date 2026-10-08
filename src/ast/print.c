@@ -623,6 +623,69 @@ static void print_trait(PrintCtx ctx, const AstTrait *trait) {
 	set_next_sibling(deep(ctx, +1), 0);
 }
 
+static void print_enum_variants(PrintCtx ctx, const AstEnumMember *member) {
+	if (member->next == NULL) {
+		set_next_sibling(deep(ctx, -1), 0);
+	}
+
+	print_tab(ctx);
+	printf(CLR_GREEN "VARIANT " CLR_END);
+	print_ident(ctx, member->name);
+	putchar('\n');
+
+	set_next_sibling(deep(ctx, +1), 1);
+
+	AstTypeList *cur = member->payload;
+	while (cur != NULL) {
+		if (cur->next == NULL) {
+			set_next_sibling(deep(ctx, +1), 0);
+		}
+		print_type(deep(ctx, +2), cur->arg);
+		cur = cur->next;
+	}
+
+	set_next_sibling(deep(ctx, +1), 0);
+
+	if (member->next != NULL) {
+		print_enum_variants(ctx, member->next);
+	}
+}
+
+static void print_enum(PrintCtx ctx, const AstEnum *enumer) {
+	print_tab(ctx);
+	printf(CLR_GREEN "ENUM" CLR_END "\n");
+
+	print_tab(deep(ctx, +1));
+	printf(CLR_GREEN "NAME " CLR_END);
+	print_ident(ctx, enumer->name);
+	putchar('\n');
+
+	set_next_sibling(ctx, 1);
+
+	if (enumer->generics != NULL) {
+		print_tab(deep(ctx, +1));
+		printf(CLR_GREEN "GENERIC PARAMS" CLR_END "\n");
+
+		AstGenericList *generic = enumer->generics;
+		while (generic != NULL) {
+			print_tab(deep(ctx, +2));
+			print_ident(ctx, generic->name);
+			putchar('\n');
+			generic = generic->next;
+		}
+	}
+
+	set_next_sibling(ctx, 0);
+
+	if (enumer->members != NULL) {
+		print_tab(deep(ctx, +1));
+		printf(CLR_GREEN "MEMBERS" CLR_END "\n");
+
+		set_next_sibling(deep(ctx, +1), 1);
+		print_enum_variants(deep(ctx, +2), enumer->members);
+	}
+}
+
 static void print_item(PrintCtx ctx, const AstItem *item) {
 	switch (item->kind) {
 	case AST_ITEM_UNKNOWN:
@@ -637,6 +700,9 @@ static void print_item(PrintCtx ctx, const AstItem *item) {
 		break;
 	case AST_ITEM_TRAIT:
 		print_trait(ctx, item->trait);
+		break;
+	case AST_ITEM_ENUM:
+		print_enum(ctx, item->enumer);
 		break;
 	}
 }

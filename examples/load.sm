@@ -16,7 +16,7 @@ pub fn load_score_table(filename: &String) in FileSystem -> Result(ScoreTable, L
 
         let record_count: usize = record_count_raw.to:[usize]()?;
         if record_count > backing.len / (sizeof(uint16) + sizeof(int32)) {
-            return LoadError.Malformed;
+            return Result.Err(LoadError.Malformed);
         };
 
         let records: Record[] = alloc:[Record](record_count)?;
@@ -45,9 +45,9 @@ pub fn load_score_table(filename: &String) in FileSystem -> Result(ScoreTable, L
             i += 1;
         };
 
-        ScoreTable.{
+        Result.Ok(ScoreTable.{
             backing: move backing,
             records: move records
-        }
+        })
     }
 }

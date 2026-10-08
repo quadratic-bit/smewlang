@@ -52,7 +52,7 @@ static AstFunctionContext *parse_func_contexts(Parser *parser) {
 	return ctx;
 }
 
-static AstGenericList *parse_generic_list(Parser *parser) {
+AstGenericList *parse_generic_list(Parser *parser) {
 	AstGenericList *generic = parser_alloc_one(parser, AstGenericList);
 	generic->next = NULL;
 

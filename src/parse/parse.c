@@ -1,5 +1,6 @@
 #include <smew/parse.h>
 
+#include "enum.h"
 #include "func.h"
 #include "parse.h"
 #include "trait.h"
@@ -205,6 +206,12 @@ static AstItem *parse_item(Parser *parser) {
 		item->kind  = AST_ITEM_TRAIT;
 		item->trait = parse_trait(parser);
 		item->span  = item->trait->span;
+		break;
+
+	case TOK_KEY_ENUM:
+		item->kind   = AST_ITEM_ENUM;
+		item->enumer = parse_enum(parser);
+		item->span   = item->enumer->span;
 		break;
 
 	default:
