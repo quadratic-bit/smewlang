@@ -123,6 +123,32 @@ static AstType *parse_type_postfix(Parser *parser, AstType *base, uint8_t min_bp
 	return NULL;
 }
 
+static AstTypeList *parse_type_list(Parser *parser) {
+	AstTypeList  *args = NULL;
+	AstTypeList **tail = &args;
+
+	while (parser->cur->kind != TOK_RPAREN && parser->cur->kind != TOK_EOF) {
+		AstType *arg = parse_type(parser, MIN_BP);
+
+		AstTypeList *item = parser_alloc_one(parser, AstTypeList);
+		item->arg  = arg;
+		item->next = NULL;
+
+		*tail = item;
+		tail = &item->next;
+
+		if (parser->cur->kind == TOK_RPAREN) {
+			break;
+		}
+
+		if (!consume_or_insert(parser, TOK_COMMA, "comma")) {
+			break;
+		}
+	}
+
+	return args;
+}
+
 AstType *parse_type(Parser *parser, uint8_t min_bp) {
 	AstType *base = parse_type_prefix(parser);
 
@@ -134,27 +160,7 @@ AstType *parse_type(Parser *parser, uint8_t min_bp) {
 	if (parser->cur->kind == TOK_LPAREN) {
 		consume(parser, TOK_LPAREN);
 
-		AstTypeGeneric  *args = NULL;
-		AstTypeGeneric **tail = &args;
-
-		while (1) {
-			AstType *arg = parse_type(parser, MIN_BP);
-
-			AstTypeGeneric *generic = parser_alloc_one(parser, AstTypeGeneric);
-			generic->arg  = arg;
-			generic->next = NULL;
-
-			*tail = generic;
-			tail = &generic->next;
-
-			if (parser->cur->kind == TOK_RPAREN) {
-				break;
-			}
-
-			if (!consume_or_insert(parser, TOK_COMMA, "comma")) {
-				break;
-			}
-		}
+		AstTypeList *args = parse_type_list(parser);
 
 		const Token *rparen = parser->cur;
 		consume_or_insert(parser, TOK_RPAREN, "closing parenthesis");

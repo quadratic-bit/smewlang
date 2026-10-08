@@ -450,7 +450,7 @@ static void print_type(PrintCtx ctx, const AstType *type) {
 
 		set_next_sibling(deep(ctx, +1), 1);
 
-		AstTypeGeneric *cur = type->generic.args;
+		AstTypeList *cur = type->generic.args;
 		while (cur != NULL) {
 			if (cur->next == NULL) {
 				set_next_sibling(deep(ctx, +1), 0);
@@ -547,7 +547,7 @@ static void print_func(PrintCtx ctx, const AstFunction *func) {
 		print_tab(deep(ctx, +1));
 		printf(CLR_GREEN "GENERIC PARAMS" CLR_END "\n");
 
-		AstFunctionGeneric *generic = func->decl->generics;
+		AstGenericList *generic = func->decl->generics;
 		while (generic != NULL) {
 			print_tab(deep(ctx, +2));
 			print_ident(ctx, generic->name);

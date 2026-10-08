@@ -52,8 +52,8 @@ static AstFunctionContext *parse_func_contexts(Parser *parser) {
 	return ctx;
 }
 
-static AstFunctionGeneric *parse_func_generics(Parser *parser) {
-	AstFunctionGeneric *generic = parser_alloc_one(parser, AstFunctionGeneric);
+static AstGenericList *parse_generic_list(Parser *parser) {
+	AstGenericList *generic = parser_alloc_one(parser, AstGenericList);
 	generic->next = NULL;
 
 	if (parser->cur->kind == TOK_IDENTIFIER) {
@@ -66,7 +66,7 @@ static AstFunctionGeneric *parse_func_generics(Parser *parser) {
 
 	if (parser->cur->kind == TOK_COMMA) {
 		consume(parser, TOK_COMMA);
-		generic->next = parse_func_generics(parser);
+		generic->next = parse_generic_list(parser);
 	}
 	generic->span = generic->name->span;
 
@@ -113,7 +113,7 @@ AstFunctionDeclaration *parse_func_decl(Parser *parser) {
 		consume(parser, TOK_LBRACKET);
 
 		if (parser->cur->kind != TOK_RBRACKET) {
-			func_decl->generics = parse_func_generics(parser);
+			func_decl->generics = parse_generic_list(parser);
 		}
 
 		consume_or_insert(parser, TOK_RBRACKET, "closing bracket");

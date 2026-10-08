@@ -29,10 +29,10 @@ typedef enum {
 	AST_TYPE_GENERIC       // T(A, B)
 } AstTypeKind;
 
-typedef struct AstTypeGeneric AstTypeGeneric;
-struct AstTypeGeneric {
-	AstType        *arg;
-	AstTypeGeneric *next;
+typedef struct AstTypeList AstTypeList;
+struct AstTypeList {
+	AstType     *arg;
+	AstTypeList *next;
 };
 
 struct AstType {
@@ -52,8 +52,8 @@ struct AstType {
 		} array_fixed;
 
 		struct {
-			AstType        *base;
-			AstTypeGeneric *args;
+			AstType     *base;
+			AstTypeList *args;
 		} generic;
 	};
 };
@@ -261,11 +261,11 @@ struct AstFunctionContext {
 	AstFunctionContext *next;
 };
 
-typedef struct AstFunctionGeneric AstFunctionGeneric;
-struct AstFunctionGeneric {
-	Span      span;
-	AstIdent *name;
-	AstFunctionGeneric *next;
+typedef struct AstGenericList AstGenericList;
+struct AstGenericList {
+	Span            span;
+	AstIdent       *name;
+	AstGenericList *next;
 };
 
 typedef struct {
@@ -275,7 +275,7 @@ typedef struct {
 	AstIdent *name;
 	AstFunctionParam   *params;
 	AstFunctionContext *contexts;
-	AstFunctionGeneric *generics;
+	AstGenericList     *generics;
 
 	AstType  *return_type;
 } AstFunctionDeclaration;
