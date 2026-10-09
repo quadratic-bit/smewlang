@@ -76,13 +76,13 @@ AstTrait *parse_trait(Parser *parser) {
 
 		if (parser->cur->kind == TOK_SEMICOLON) {
 			(*last)->func->span = (*last)->func->decl->span;
-			last = &(*last)->next;
 		}
 
 		if (parser->cur->kind == TOK_LBRACE) {
 			parse_func_def_with_decl(parser, (*last)->func);
 		}
 
+		last = &(*last)->next;
 		consume_or_insert(parser, TOK_SEMICOLON, "semicolon");
 	}
 

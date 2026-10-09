@@ -1,0 +1,50 @@
+enum Event {
+    Stop,
+    Value(int32),
+    Pair(int32, int32)
+}
+
+enum Result[T, E] {
+    Ok(T),
+    Err(E)
+}
+
+pub fn matchmatch(
+    first:    Event,
+    second:   Event,
+    third:    Event,
+    outcome:  Result(int32, int32),
+    expected: int32
+) -> int32 {
+    let a: int32 = match move first {
+        Stop               -> 0,
+        Value(let n)       -> n,
+        Pair(let x, let y) -> x + y,
+    };
+
+    let b: int32 = match move second {
+        Stop                  -> 0,
+        Value(expected)       -> 69,
+        Value(let n)          -> n,
+        Pair(expected, let y) -> y,
+        Pair(let x, expected) -> x,
+        Pair(let x, let y)    -> {
+            let sum: int32 = x + y;
+            sum
+        },
+    };
+
+    let c: int32 = match move outcome {
+        Ok(let value) -> {
+            let adjustment: int32 = match move third {
+                Stop               -> 0,
+                Value(let n)       -> n,
+                Pair(let x, let y) -> x + y,
+            };
+            value + adjustment
+        },
+        Err(let error) -> return -error,
+    };
+
+    a + b + c
+}
