@@ -53,7 +53,7 @@ int guard_eof(Parser *parser) {
 }
 
 AstIdent *consume_ident(Parser *parser) {
-	assert(parser->cur->kind == TOK_IDENTIFIER && "Unexpected token (expected identifier)");
+	assert(parser->cur->kind == TOK_IDENTIFIER && "Unexpected token");
 	AstIdent *ident = parser_alloc_one(parser, AstIdent);
 	ident->span = parser->cur->span;
 	parser->cur++;

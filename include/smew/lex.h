@@ -17,6 +17,7 @@ typedef enum {
 	TOK_KEY_IN,         // in
 	TOK_KEY_TRAIT,      // trait
 	TOK_KEY_ENUM,       // enum
+	TOK_KEY_MATCH,      // match
 	TOK_KEY_WITH,       // with
 	TOK_KEY_MUT,        // mut
 	TOK_KEY_LOOP,       // loop

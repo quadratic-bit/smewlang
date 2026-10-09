@@ -391,6 +391,75 @@ static void print_expr(PrintCtx ctx, const AstExpr *expr) {
 			cur = cur->next;
 		}
 		break;
+
+	case AST_EXPR_MATCH:
+		print_tab(ctx);
+		printf(CLR_GREEN "MATCH" CLR_END "\n");
+		set_next_sibling(ctx, 1);
+
+		print_tab(deep(ctx, +1));
+		printf(CLR_GREEN "OPERAND" CLR_END "\n");
+
+		print_expr(deep(ctx, +2), expr->match->operand);
+
+		AstMatchArm *arm = expr->match->arms;
+
+		set_next_sibling(ctx, 1);
+		while (arm != NULL) {
+			if (arm->next == NULL) {
+				set_next_sibling(ctx, 0);
+			}
+			print_tab(deep(ctx, +1));
+			printf(CLR_GREEN "ARM " CLR_END);
+			print_ident(ctx, arm->name);
+			putchar('\n');
+
+			set_next_sibling(deep(ctx, +1), 1);
+			if (arm->args != NULL) {
+				AstMatchArg *arg = arm->args;
+				while (arg != NULL) {
+					print_tab(deep(ctx, +2));
+					printf(CLR_GREEN "ARG ");
+					switch (arg->kind) {
+					case AST_MATCH_UNKOWN:
+						printf(CLR_RED "<UNK>" CLR_END "\n");
+						break;
+					case AST_MATCH_CAPTURE:
+						printf(CLR_YELLOW "CAPTURE" CLR_END "\n");
+						print_tab(deep(ctx, +3));
+						printf(CLR_GREEN "IDENT ");
+						print_ident(ctx, arg->capture);
+						putchar('\n');
+						break;
+					case AST_MATCH_BINDING:
+						printf(CLR_YELLOW "BINDING" CLR_END "\n");
+						print_tab(deep(ctx, +3));
+						printf(CLR_GREEN "IDENT ");
+						print_ident(ctx, arg->binding);
+						putchar('\n');
+						break;
+					case AST_MATCH_LITERAL:
+						printf(CLR_YELLOW "LITERAL" CLR_END "\n");
+						print_tab(deep(ctx, +3));
+						printf(CLR_GREEN "VALUE ");
+						print_literal(ctx, arg->literal);
+						putchar('\n');
+						break;
+					}
+					arg = arg->next;
+				}
+			}
+
+			set_next_sibling(deep(ctx, +1), 0);
+
+			print_tab(deep(ctx, +2));
+			printf(CLR_GREEN "EXPR" CLR_END "\n");
+			print_expr(deep(ctx, +3), arm->expr);
+
+			arm = arm->next;
+		}
+		set_next_sibling(ctx, 0);
+		break;
 	}
 }
 

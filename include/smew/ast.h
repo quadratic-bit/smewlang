@@ -205,6 +205,46 @@ typedef struct {
 } AstBreak;
 
 typedef enum {
+	AST_MATCH_UNKOWN,
+
+	AST_MATCH_CAPTURE,
+
+	AST_MATCH_BINDING,
+	AST_MATCH_LITERAL,
+} AstMatchArgKind;
+
+typedef struct AstMatchArg AstMatchArg;
+struct AstMatchArg {
+	Span            span;
+	AstMatchArgKind kind;
+
+	union {
+		AstIdent   *capture;
+		AstIdent   *binding;
+		AstLiteral *literal;
+	};
+
+	AstMatchArg *next;
+};
+
+typedef struct AstMatchArm AstMatchArm;
+struct AstMatchArm {
+	Span span;
+
+	AstIdent    *name;
+	AstMatchArg *args;
+	AstExpr     *expr;
+
+	AstMatchArm *next;
+};
+
+typedef struct {
+	Span         span;
+	AstExpr     *operand;
+	AstMatchArm *arms;
+} AstMatch;
+
+typedef enum {
 	AST_EXPR_UNKNOWN,
 	AST_EXPR_BLOCK,
 	AST_EXPR_IF,
@@ -215,6 +255,7 @@ typedef enum {
 	AST_EXPR_TYPE_APPLY,
 	AST_EXPR_INDEX,
 	AST_EXPR_BIND,
+	AST_EXPR_MATCH,
 	AST_EXPR_WITH,
 	AST_EXPR_BREAK,
 	AST_EXPR_LITERAL,
@@ -235,6 +276,7 @@ struct AstExpr {
 		AstCall     *call;
 		AstTypeAppl *type_appl;
 		AstBind     *bind;
+		AstMatch    *match;
 		AstIndex    *index;
 		AstWith     *with;
 		AstBreak    *brk;

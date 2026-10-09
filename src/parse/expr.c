@@ -233,6 +233,151 @@ static AstBind *parse_bind(Parser *parser) {
 	return bind;
 }
 
+static AstMatchArg *parse_match_args(Parser *parser) {
+	AstMatchArg *arg = parser_alloc_one(parser, AstMatchArg);
+	arg->next = NULL;
+
+	const Token *tok_start = parser->cur;
+
+	switch (parser->cur->kind) {
+	case TOK_KEY_LET: {
+		consume(parser, TOK_KEY_LET);
+		arg->kind = AST_MATCH_CAPTURE;
+
+		if (parser->cur->kind == TOK_IDENTIFIER) {
+			arg->capture = consume_ident(parser);
+		} else {
+			add_diag_expected(&parser->diags, parser->cur->span,
+					  "Unexpected token", "identifier");
+			arg->capture = unknown_ident(parser);
+
+			if (parser->cur->kind != TOK_COMMA) {
+				parser->cur++;  // maybe it's a keyword or a literal?
+			}
+		}
+		break;
+	}
+	// XXX: combine literals
+	case TOK_LITERAL_INT:
+		arg->kind = AST_MATCH_LITERAL;
+		arg->literal = consume_literal_int(parser);
+		break;
+	case TOK_LITERAL_STRING:
+		arg->kind = AST_MATCH_LITERAL;
+		arg->literal = consume_literal_str(parser);
+		break;
+	case TOK_KEY_UNIT:
+		arg->kind = AST_MATCH_LITERAL;
+		arg->literal = consume_literal_unit(parser);
+		break;
+	case TOK_IDENTIFIER:
+		arg->kind = AST_MATCH_BINDING;
+		arg->binding = consume_ident(parser);
+		break;
+	default:
+		arg->kind = AST_MATCH_UNKOWN;
+		add_diag_expected(&parser->diags, parser->cur->span,
+				  "Unexpected token", "`let`, literal or an identifier");
+		parser->cur++;
+		break;
+	}
+
+	arg->span = span_span(tok_start->span, prev(parser)->span);
+
+	if (parser->cur->kind == TOK_RPAREN || parser->cur->kind == TOK_EOF) return arg;
+
+	consume_or_insert(parser, TOK_COMMA, "comma");
+	arg->next = parse_match_args(parser);
+	return arg;
+}
+
+static AstMatchArm *parse_match_arms(Parser *parser) {
+	if (parser->cur->kind == TOK_RBRACE) return NULL;
+
+	AstMatchArm *arm = parser_alloc_one(parser, AstMatchArm);
+	arm->next = NULL;
+	arm->args = NULL;
+
+	const Token *tok_start = parser->cur;
+
+	// TODO: repeated pattern to expect an identifier
+	if (parser->cur->kind == TOK_IDENTIFIER) {
+		arm->name = consume_ident(parser);
+	} else {
+		add_diag_expected(&parser->diags, parser->cur->span,
+		                  "Unexpected token", "identifier");
+		arm->name = unknown_ident(parser);
+
+		if (parser->cur->kind != TOK_LPAREN && parser->cur->kind != TOK_ARROW) {
+			parser->cur++;  // maybe it's a keyword or a literal?
+		}
+	}
+
+	if (parser->cur->kind == TOK_LPAREN) {
+		consume(parser, TOK_LPAREN);
+		arm->args = parse_match_args(parser);
+		consume_or_insert(parser, TOK_RPAREN, "closing parenthesis");
+	}
+
+	consume_or_insert(parser, TOK_ARROW, "arrow");
+
+	arm->expr = parse_expr(parser, BINDING_SEMICOLON);
+	if (arm->expr == NULL) {
+		add_diag_expected(&parser->diags, parser->cur->span,
+		                  "Unexpected token", "expression");
+		arm->expr = unit_expr(parser);
+		arm->span = span_span(tok_start->span, parser->cur->span);
+	} else {
+		arm->span = span_span(tok_start->span, arm->expr->any->span);
+	}
+
+	if (parser->cur->kind == TOK_RBRACE || parser->cur->kind == TOK_EOF) return arm;
+
+	consume_or_insert(parser, TOK_COMMA, "comma");
+	arm->next = parse_match_arms(parser);
+	return arm;
+}
+
+static AstMatch *parse_match(Parser *parser) {
+	assert(parser->cur->kind == TOK_KEY_MATCH && "Unexpected token kind");
+	AstMatch *match = parser_alloc_one(parser, AstMatch);
+	match->arms = NULL;
+
+	const Token *match_tok = parser->cur;
+	consume(parser, TOK_KEY_MATCH);
+
+	match->operand = parse_expr(parser, BINDING_SEMICOLON);
+
+	if (parser->cur->kind != TOK_LBRACE) {
+		add_diag_expected(&parser->diags, parser->cur->span,
+		                  "Unexpected token", "opening brace");
+
+		while (parser->cur->kind != TOK_LBRACE &&
+		       parser->cur->kind != TOK_RBRACE &&
+		       parser->cur->kind != TOK_EOF)
+		{
+			parser->cur++;
+		}
+
+		if (parser->cur->kind != TOK_LBRACE) {
+			match->span = zero_span();
+			return match;
+		}
+	}
+
+	consume(parser, TOK_LBRACE);
+
+	match->arms = parse_match_arms(parser);
+	match->span = span_span(match_tok->span, parser->cur->span);
+
+	if (guard_eof(parser)) {
+		return match;
+	}
+
+	consume(parser, TOK_RBRACE);
+	return match;
+}
+
 static AstWith *parse_with(Parser *parser) {
 	assert(parser->cur->kind == TOK_KEY_WITH && "Unexpected token kind");
 	AstWith *with = parser_alloc_one(parser, AstWith);
@@ -413,6 +558,15 @@ static AstExpr *parse_expr_prefix(Parser *parser) {
 
 		AstExpr *expr = new_expr(parser, AST_EXPR_BIND);
 		expr->bind = bind;
+
+		return expr;
+	}
+
+	if (cur_tok->kind == TOK_KEY_MATCH) {
+		AstMatch *match = parse_match(parser);
+
+		AstExpr *expr = new_expr(parser, AST_EXPR_MATCH);
+		expr->match = match;
 
 		return expr;
 	}
