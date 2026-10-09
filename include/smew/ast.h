@@ -206,6 +206,7 @@ typedef struct {
 
 typedef enum {
 	AST_EXPR_UNKNOWN,
+	AST_EXPR_BLOCK,
 	AST_EXPR_IF,
 	AST_EXPR_LOOP,
 	AST_EXPR_OP_BINARY,
@@ -226,6 +227,7 @@ struct AstExpr {
 	union {
 		struct { Span span; } *any;
 
+		AstBlock    *block;
 		AstBranch   *branch;
 		AstLoop     *loop;
 		AstOpBinary *op_binary;

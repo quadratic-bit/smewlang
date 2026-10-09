@@ -358,9 +358,18 @@ static AstExpr *parse_expr_prefix(Parser *parser) {
 
 	if (cur_tok->kind == TOK_LPAREN) {
 		consume(parser, TOK_LPAREN);
-		AstExpr *base_expr = parse_expr(parser, MIN_BP);
+		AstExpr *expr = parse_expr(parser, MIN_BP);
 		consume_or_insert(parser, TOK_RPAREN, "closing parenthesis");
-		return base_expr;
+		return expr;
+	}
+
+	if (cur_tok->kind == TOK_LBRACE) {
+		AstBlock *block = parse_block(parser);
+
+		AstExpr *expr = new_expr(parser, AST_EXPR_BLOCK);
+		expr->block = block;
+
+		return expr;
 	}
 
 	if (cur_tok->kind == TOK_IDENTIFIER) {

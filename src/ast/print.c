@@ -284,6 +284,12 @@ static void print_expr(PrintCtx ctx, const AstExpr *expr) {
 		print_literal(ctx, expr->literal);
 		break;
 
+	case AST_EXPR_BLOCK:
+		print_tab(ctx);
+		printf(CLR_GREEN "BLOCK" CLR_END "\n");
+		print_expr(deep(ctx, +1), expr->block->body);
+		break;
+
 	case AST_EXPR_OP_BINARY:
 		if (expr->op_binary->op == AST_OP_BINARY_SEQ) {
 			int seq_has_next = ctx.printer->has_next_sibling[ctx.depth - 1];
