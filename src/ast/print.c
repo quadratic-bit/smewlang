@@ -113,6 +113,10 @@ static void print_literal(PrintCtx ctx, const AstLiteral *lit) {
 	case AST_LITERAL_UNIT:
 		printf(CLR_YELLOW "unit\n" CLR_END);
 		break;
+	case AST_LITERAL_BOOL:
+		if (lit->bool == AST_TRUE) printf(CLR_YELLOW "true\n"  CLR_END);
+		else                       printf(CLR_YELLOW "false\n" CLR_END);
+		break;
 	case AST_LITERAL_STRUCT:
 		printf(CLR_GREEN "STRUCT " CLR_END);
 		print_ident(ctx, lit->struc->type);

@@ -125,10 +125,16 @@ typedef struct {
 
 typedef enum {
 	AST_LITERAL_UNIT,
+	AST_LITERAL_BOOL,
 	AST_LITERAL_INT,
 	AST_LITERAL_STRING,
 	AST_LITERAL_STRUCT,
 } AstLiterlKind;
+
+typedef enum {
+	AST_TRUE,
+	AST_FALSE,
+} AstBoolean;
 
 typedef struct AstLiteralStructField AstLiteralStructField;
 struct AstLiteralStructField {
@@ -151,6 +157,7 @@ typedef struct {
 		/* Nothing       Unit; */
 		/* Nothing       Int; */
 		AstStructLiteral *struc;
+		AstBoolean        bool;
 	};
 } AstLiteral;
 

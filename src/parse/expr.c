@@ -49,6 +49,32 @@ static AstLiteral *consume_literal_unit(Parser *parser) {
 	return lit;
 }
 
+static AstLiteral *consume_literal_true(Parser *parser) {
+	assert(parser->cur->kind == TOK_KEY_TRUE && "Unexpected token kind");
+
+	AstLiteral *lit = parser_alloc_one(parser, AstLiteral);
+	lit->kind = AST_LITERAL_BOOL;
+	lit->bool = AST_TRUE;
+	lit->span = parser->cur->span;
+
+	parser->cur++;
+
+	return lit;
+}
+
+static AstLiteral *consume_literal_false(Parser *parser) {
+	assert(parser->cur->kind == TOK_KEY_FALSE && "Unexpected token kind");
+
+	AstLiteral *lit = parser_alloc_one(parser, AstLiteral);
+	lit->kind = AST_LITERAL_BOOL;
+	lit->bool = AST_FALSE;
+	lit->span = parser->cur->span;
+
+	parser->cur++;
+
+	return lit;
+}
+
 static int is_prefix_op(uint8_t bp) {
 	return bp != NO_BP;
 }
@@ -265,6 +291,14 @@ static AstMatchArg *parse_match_args(Parser *parser) {
 	case TOK_LITERAL_STRING:
 		arg->kind = AST_MATCH_LITERAL;
 		arg->literal = consume_literal_str(parser);
+		break;
+	case TOK_KEY_TRUE:
+		arg->kind = AST_MATCH_LITERAL;
+		arg->literal = consume_literal_true(parser);
+		break;
+	case TOK_KEY_FALSE:
+		arg->kind = AST_MATCH_LITERAL;
+		arg->literal = consume_literal_false(parser);
 		break;
 	case TOK_KEY_UNIT:
 		arg->kind = AST_MATCH_LITERAL;
@@ -537,6 +571,24 @@ static AstExpr *parse_expr_prefix(Parser *parser) {
 
 	if (cur_tok->kind == TOK_LITERAL_STRING) {
 		AstLiteral *lit = consume_literal_str(parser);
+
+		AstExpr *expr = new_expr(parser, AST_EXPR_LITERAL);
+		expr->literal = lit;
+
+		return expr;
+	}
+
+	if (cur_tok->kind == TOK_KEY_TRUE) {
+		AstLiteral *lit = consume_literal_true(parser);
+
+		AstExpr *expr = new_expr(parser, AST_EXPR_LITERAL);
+		expr->literal = lit;
+
+		return expr;
+	}
+
+	if (cur_tok->kind == TOK_KEY_FALSE) {
+		AstLiteral *lit = consume_literal_false(parser);
 
 		AstExpr *expr = new_expr(parser, AST_EXPR_LITERAL);
 		expr->literal = lit;

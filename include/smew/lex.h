@@ -29,6 +29,8 @@ typedef enum {
 	TOK_KEY_RETURN,     // return
 	TOK_KEY_MOVE,       // move
 	TOK_KEY_LET,        // let
+	TOK_KEY_TRUE,       // true
+	TOK_KEY_FALSE,      // false
 	TOK_KEY_UNIT,       // unit
 
 	TOK_LITERAL_INT,    // 42
