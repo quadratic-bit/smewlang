@@ -94,6 +94,13 @@ static void print_ident(PrintCtx ctx, const AstIdent *ident) {
 	}
 }
 
+static void print_ident_prefix(PrintCtx ctx, const char *prefix, AstIdent *ident) {
+	print_tab(ctx);
+	printf("%s", prefix);
+	print_ident(ctx, ident);
+	putchar('\n');
+}
+
 static void print_expr(PrintCtx, const AstExpr *);
 static void print_type(PrintCtx, const AstType *);
 
@@ -114,8 +121,10 @@ static void print_literal(PrintCtx ctx, const AstLiteral *lit) {
 		printf(CLR_YELLOW "unit\n" CLR_END);
 		break;
 	case AST_LITERAL_BOOL:
-		if (lit->bool == AST_TRUE) printf(CLR_YELLOW "true\n"  CLR_END);
-		else                       printf(CLR_YELLOW "false\n" CLR_END);
+		switch (lit->bool) {
+		case AST_TRUE:  printf(CLR_YELLOW "true\n"  CLR_END); break;
+		case AST_FALSE: printf(CLR_YELLOW "false\n" CLR_END); break;
+		}
 		break;
 	case AST_LITERAL_STRUCT:
 		printf(CLR_GREEN "STRUCT " CLR_END);
@@ -139,10 +148,7 @@ static void print_literal(PrintCtx ctx, const AstLiteral *lit) {
 			print_tab(deep(ctx, +1));
 			printf(CLR_GREEN "FIELD" CLR_END "\n");
 
-			print_tab(deep(ctx, +2));
-			printf(CLR_GREEN "NAME " CLR_END);
-			print_ident(ctx, cur->field);
-			putchar('\n');
+			print_ident_prefix(deep(ctx, +2), CLR_GREEN "NAME ", cur->field);
 
 			print_tab(deep(ctx, +2));
 			printf(CLR_GREEN "VALUE" CLR_END "\n");
@@ -165,10 +171,7 @@ static void print_bind(PrintCtx ctx, const AstBind *bind) {
 
 	putchar('\n');
 
-	print_tab(deep(ctx, +1));
-	printf(CLR_GREEN "NAME " CLR_END);
-	print_ident(ctx, bind->name);
-	putchar('\n');
+	print_ident_prefix(deep(ctx, +1), CLR_GREEN "NAME ", bind->name);
 
 	print_tab(deep(ctx, +1));
 	printf(CLR_GREEN "TYPE" CLR_END "\n");
@@ -270,6 +273,69 @@ static void print_type_apply(PrintCtx ctx, const AstTypeAppl *appl) {
 	set_next_sibling(deep(ctx, +1), 0);
 }
 
+static void print_match_args(PrintCtx ctx, const AstMatchArg *arg) {
+	print_tab(deep(ctx, +2));
+	printf(CLR_GREEN "ARG ");
+	switch (arg->kind) {
+	case AST_MATCH_UNKOWN:
+		printf(CLR_RED "<UNK>" CLR_END "\n");
+		break;
+	case AST_MATCH_CAPTURE:
+		printf(CLR_YELLOW "CAPTURE" CLR_END "\n");
+		print_ident_prefix(deep(ctx, +3), CLR_GREEN "IDENT ", arg->capture);
+		break;
+	case AST_MATCH_BINDING:
+		printf(CLR_YELLOW "BINDING" CLR_END "\n");
+		print_ident_prefix(deep(ctx, +3), CLR_GREEN "IDENT ", arg->binding);
+		break;
+	case AST_MATCH_LITERAL:
+		printf(CLR_YELLOW "LITERAL" CLR_END "\n");
+		print_tab(deep(ctx, +3));
+		printf(CLR_GREEN "VALUE ");
+		print_literal(ctx, arg->literal);
+		putchar('\n');
+		break;
+	}
+	if (arg->next != NULL) print_match_args(ctx, arg->next);
+}
+
+static void print_match(PrintCtx ctx, const AstMatch *match) {
+	print_tab(ctx);
+	printf(CLR_GREEN "MATCH" CLR_END "\n");
+	set_next_sibling(ctx, 1);
+
+	print_tab(deep(ctx, +1));
+	printf(CLR_GREEN "OPERAND" CLR_END "\n");
+
+	print_expr(deep(ctx, +2), match->operand);
+
+	AstMatchArm *arm = match->arms;
+
+	set_next_sibling(ctx, 1);
+	while (arm != NULL) {
+		if (arm->next == NULL) {
+			set_next_sibling(ctx, 0);
+		}
+
+		print_ident_prefix(deep(ctx, +1), CLR_GREEN "ARM ", arm->name);
+
+		set_next_sibling(deep(ctx, +1), 1);
+
+		if (arm->args != NULL) {
+			print_match_args(ctx, arm->args);
+		}
+
+		set_next_sibling(deep(ctx, +1), 0);
+
+		print_tab(deep(ctx, +2));
+		printf(CLR_GREEN "EXPR" CLR_END "\n");
+		print_expr(deep(ctx, +3), arm->expr);
+
+		arm = arm->next;
+	}
+	set_next_sibling(ctx, 0);
+}
+
 static void print_expr(PrintCtx ctx, const AstExpr *expr) {
 	switch (expr->kind) {
 	case AST_EXPR_UNKNOWN:
@@ -278,10 +344,7 @@ static void print_expr(PrintCtx ctx, const AstExpr *expr) {
 		break;
 
 	case AST_EXPR_IDENT:
-		print_tab(ctx);
-		printf(CLR_GREEN "IDENTIFIER " CLR_END);
-		print_ident(ctx, expr->ident);
-		putchar('\n');
+		print_ident_prefix(ctx, CLR_GREEN "IDENTIFIER ", expr->ident);
 		break;
 
 	case AST_EXPR_LITERAL:
@@ -397,74 +460,27 @@ static void print_expr(PrintCtx ctx, const AstExpr *expr) {
 		break;
 
 	case AST_EXPR_MATCH:
-		print_tab(ctx);
-		printf(CLR_GREEN "MATCH" CLR_END "\n");
-		set_next_sibling(ctx, 1);
-
-		print_tab(deep(ctx, +1));
-		printf(CLR_GREEN "OPERAND" CLR_END "\n");
-
-		print_expr(deep(ctx, +2), expr->match->operand);
-
-		AstMatchArm *arm = expr->match->arms;
-
-		set_next_sibling(ctx, 1);
-		while (arm != NULL) {
-			if (arm->next == NULL) {
-				set_next_sibling(ctx, 0);
-			}
-			print_tab(deep(ctx, +1));
-			printf(CLR_GREEN "ARM " CLR_END);
-			print_ident(ctx, arm->name);
-			putchar('\n');
-
-			set_next_sibling(deep(ctx, +1), 1);
-			if (arm->args != NULL) {
-				AstMatchArg *arg = arm->args;
-				while (arg != NULL) {
-					print_tab(deep(ctx, +2));
-					printf(CLR_GREEN "ARG ");
-					switch (arg->kind) {
-					case AST_MATCH_UNKOWN:
-						printf(CLR_RED "<UNK>" CLR_END "\n");
-						break;
-					case AST_MATCH_CAPTURE:
-						printf(CLR_YELLOW "CAPTURE" CLR_END "\n");
-						print_tab(deep(ctx, +3));
-						printf(CLR_GREEN "IDENT ");
-						print_ident(ctx, arg->capture);
-						putchar('\n');
-						break;
-					case AST_MATCH_BINDING:
-						printf(CLR_YELLOW "BINDING" CLR_END "\n");
-						print_tab(deep(ctx, +3));
-						printf(CLR_GREEN "IDENT ");
-						print_ident(ctx, arg->binding);
-						putchar('\n');
-						break;
-					case AST_MATCH_LITERAL:
-						printf(CLR_YELLOW "LITERAL" CLR_END "\n");
-						print_tab(deep(ctx, +3));
-						printf(CLR_GREEN "VALUE ");
-						print_literal(ctx, arg->literal);
-						putchar('\n');
-						break;
-					}
-					arg = arg->next;
-				}
-			}
-
-			set_next_sibling(deep(ctx, +1), 0);
-
-			print_tab(deep(ctx, +2));
-			printf(CLR_GREEN "EXPR" CLR_END "\n");
-			print_expr(deep(ctx, +3), arm->expr);
-
-			arm = arm->next;
-		}
-		set_next_sibling(ctx, 0);
+		print_match(ctx, expr->match);
 		break;
 	}
+}
+
+static void print_type_list(PrintCtx ctx, const AstTypeList *args) {
+	print_tab(ctx);
+	printf(CLR_GREEN "ARGS" CLR_END "\n");
+
+	set_next_sibling(ctx, 1);
+
+	while (args != NULL) {
+		if (args->next == NULL) {
+			set_next_sibling(ctx, 0);
+		}
+		print_type(deep(ctx, +1), args->arg);
+		args = args->next;
+	}
+
+	set_next_sibling(ctx, 0);
+
 }
 
 static void print_type(PrintCtx ctx, const AstType *type) {
@@ -524,21 +540,7 @@ static void print_type(PrintCtx ctx, const AstType *type) {
 		print_type(deep(ctx, +2), type->generic.base);
 		set_next_sibling(ctx, 0);
 
-		print_tab(deep(ctx, +1));
-		printf(CLR_GREEN "ARGS" CLR_END "\n");
-
-		set_next_sibling(deep(ctx, +1), 1);
-
-		AstTypeList *cur = type->generic.args;
-		while (cur != NULL) {
-			if (cur->next == NULL) {
-				set_next_sibling(deep(ctx, +1), 0);
-			}
-			print_type(deep(ctx, +2), cur->arg);
-			cur = cur->next;
-		}
-
-		set_next_sibling(deep(ctx, +1), 0);
+		print_type_list(deep(ctx, +1), type->generic.args);
 		break;
 	}
 }
@@ -547,10 +549,7 @@ static void print_struct_field(PrintCtx ctx, const AstStructField *field) {
 	print_tab(ctx);
 	printf(CLR_GREEN "FIELD" CLR_END "\n");
 
-	print_tab(deep(ctx, +1));
-	printf(CLR_GREEN "NAME " CLR_END);
-	print_ident(ctx, field->name);
-	putchar('\n');
+	print_ident_prefix(deep(ctx, +1), CLR_GREEN "NAME ", field->name);
 
 	print_tab(deep(ctx, +1));
 	printf(CLR_GREEN "TYPE" CLR_END "\n");
@@ -558,10 +557,7 @@ static void print_struct_field(PrintCtx ctx, const AstStructField *field) {
 }
 
 static void print_struct(PrintCtx ctx, const AstStruct *struc) {
-	print_tab(ctx);
-	printf(CLR_GREEN "STRUCT " CLR_END);
-	print_ident(ctx, struc->name);
-	putchar('\n');
+	print_ident_prefix(ctx, CLR_GREEN "STRUCT ", struc->name);
 
 	set_next_sibling(ctx, 1);
 
@@ -581,14 +577,23 @@ static void print_func_param(PrintCtx ctx, const AstFunctionParam *param) {
 	print_tab(ctx);
 	printf(CLR_GREEN "PARAM" CLR_END "\n");
 
-	print_tab(deep(ctx, +1));
-	printf(CLR_GREEN "NAME " CLR_END);
-	print_ident(ctx, param->name);
-	putchar('\n');
+	print_ident_prefix(deep(ctx, +1), CLR_GREEN "NAME ", param->name);
 
 	print_tab(deep(ctx, +1));
 	printf(CLR_GREEN "TYPE" CLR_END "\n");
 	print_type(deep(ctx, +2), param->type);
+}
+
+static void print_generic_params(PrintCtx ctx, AstGenericList *generic) {
+	print_tab(ctx);
+	printf(CLR_GREEN "GENERIC PARAMS" CLR_END "\n");
+
+	while (generic != NULL) {
+		print_tab(deep(ctx, +1));
+		print_ident(ctx, generic->name);
+		putchar('\n');
+		generic = generic->next;
+	}
 }
 
 static void print_func(PrintCtx ctx, const AstFunction *func) {
@@ -600,10 +605,7 @@ static void print_func(PrintCtx ctx, const AstFunction *func) {
 
 	set_next_sibling(ctx, 1);
 
-	print_tab(deep(ctx, +1));
-	printf(CLR_GREEN "NAME " CLR_END);
-	print_ident(ctx, func->decl->name);
-	putchar('\n');
+	print_ident_prefix(deep(ctx, +1), CLR_GREEN "NAME ", func->decl->name);
 
 	print_tab(deep(ctx, +1));
 	printf(CLR_GREEN "RETURNS" CLR_END "\n");
@@ -623,16 +625,7 @@ static void print_func(PrintCtx ctx, const AstFunction *func) {
 	}
 
 	if (func->decl->generics != NULL) {
-		print_tab(deep(ctx, +1));
-		printf(CLR_GREEN "GENERIC PARAMS" CLR_END "\n");
-
-		AstGenericList *generic = func->decl->generics;
-		while (generic != NULL) {
-			print_tab(deep(ctx, +2));
-			print_ident(ctx, generic->name);
-			putchar('\n');
-			generic = generic->next;
-		}
+		print_generic_params(deep(ctx, +1), func->decl->generics);
 	}
 
 	AstFunctionParam *param = func->decl->params;
@@ -658,10 +651,7 @@ static void print_trait(PrintCtx ctx, const AstTrait *trait) {
 	print_tab(ctx);
 	printf(CLR_GREEN "TRAIT" CLR_END "\n");
 
-	print_tab(deep(ctx, +1));
-	printf(CLR_GREEN "NAME " CLR_END);
-	print_ident(ctx, trait->name);
-	putchar('\n');
+	print_ident_prefix(deep(ctx, +1), CLR_GREEN "NAME ", trait->name);
 
 	if (trait->funcs != NULL) {
 		set_next_sibling(ctx, 1);
@@ -709,40 +699,17 @@ static void print_impl(PrintCtx ctx, const AstImpl *impl) {
 	set_next_sibling(ctx, 1);
 
 	if (impl->generics != NULL) {
-		print_tab(deep(ctx, +1));
-		printf(CLR_GREEN "GENERIC PARAMS" CLR_END "\n");
-
-		AstGenericList *generic = impl->generics;
-		while (generic != NULL) {
-			print_tab(deep(ctx, +2));
-			print_ident(ctx, generic->name);
-			putchar('\n');
-			generic = generic->next;
-		}
+		print_generic_params(deep(ctx, +1), impl->generics);
 	}
 
 	if (impl->funcs == NULL && impl->trait == NULL) {
 		set_next_sibling(ctx, 0);
 	}
 
-	print_tab(deep(ctx, +1));
-	printf(CLR_GREEN "SELF " CLR_END);
-	print_ident(ctx, impl->self);
-	putchar('\n');
+	print_ident_prefix(deep(ctx, +1), CLR_GREEN "SELF ", impl->self);
 
 	if (impl->self_args != NULL) {
-		AstTypeList *self_arg = impl->self_args;
-
-		set_next_sibling(deep(ctx, +1), 1);
-		while (self_arg != NULL) {
-			if (self_arg->next == NULL) {
-				set_next_sibling(deep(ctx, +1), 0);
-			}
-			print_tab(deep(ctx, +2));
-			printf(CLR_GREEN "ARG" CLR_END "\n");
-			print_type(deep(ctx, +3), self_arg->arg);
-			self_arg = self_arg->next;
-		}
+		print_type_list(deep(ctx, +1), impl->self_args);
 	}
 
 	if (impl->funcs == NULL) {
@@ -750,10 +717,7 @@ static void print_impl(PrintCtx ctx, const AstImpl *impl) {
 	}
 
 	if (impl->trait != NULL) {
-		print_tab(deep(ctx, +1));
-		printf(CLR_GREEN "TRAIT " CLR_END);
-		print_ident(ctx, impl->trait);
-		putchar('\n');
+		print_ident_prefix(deep(ctx, +1), CLR_GREEN "TRAIT ", impl->trait);
 	}
 
 	if (impl->funcs == NULL) return;
@@ -781,23 +745,20 @@ static void print_enum_variants(PrintCtx ctx, const AstEnumMember *member) {
 		set_next_sibling(deep(ctx, -1), 0);
 	}
 
-	print_tab(ctx);
-	printf(CLR_GREEN "VARIANT " CLR_END);
-	print_ident(ctx, member->name);
-	putchar('\n');
+	print_ident_prefix(ctx, CLR_GREEN "VARIANT ", member->name);
 
-	set_next_sibling(deep(ctx, +1), 1);
+	set_next_sibling(ctx, 1);
 
 	AstTypeList *cur = member->payload;
 	while (cur != NULL) {
 		if (cur->next == NULL) {
-			set_next_sibling(deep(ctx, +1), 0);
+			set_next_sibling(ctx, 0);
 		}
-		print_type(deep(ctx, +2), cur->arg);
+		print_type(deep(ctx, +1), cur->arg);
 		cur = cur->next;
 	}
 
-	set_next_sibling(deep(ctx, +1), 0);
+	set_next_sibling(ctx, 0);
 
 	if (member->next != NULL) {
 		print_enum_variants(ctx, member->next);
@@ -808,24 +769,12 @@ static void print_enum(PrintCtx ctx, const AstEnum *enumer) {
 	print_tab(ctx);
 	printf(CLR_GREEN "ENUM" CLR_END "\n");
 
-	print_tab(deep(ctx, +1));
-	printf(CLR_GREEN "NAME " CLR_END);
-	print_ident(ctx, enumer->name);
-	putchar('\n');
+	print_ident_prefix(deep(ctx, +1), CLR_GREEN "NAME ", enumer->name);
 
 	set_next_sibling(ctx, 1);
 
 	if (enumer->generics != NULL) {
-		print_tab(deep(ctx, +1));
-		printf(CLR_GREEN "GENERIC PARAMS" CLR_END "\n");
-
-		AstGenericList *generic = enumer->generics;
-		while (generic != NULL) {
-			print_tab(deep(ctx, +2));
-			print_ident(ctx, generic->name);
-			putchar('\n');
-			generic = generic->next;
-		}
+		print_generic_params(deep(ctx, +1), enumer->generics);
 	}
 
 	set_next_sibling(ctx, 0);
