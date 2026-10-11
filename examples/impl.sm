@@ -1,0 +1,94 @@
+struct Counter {
+    value: int32;
+}
+
+enum Option[T] {
+    None,
+    Some(T)
+}
+
+enum Status {
+    Pending,
+    Ready,
+    Failed
+}
+
+trait IsEmpty {
+    fn is_empty(self: &Self) -> bool;
+}
+
+trait Resettable {
+    fn reset(self: &mut Self) -> Unit;
+}
+
+trait IsPresent {
+    fn is_present(self: &Self) -> bool;
+}
+
+impl Counter {
+    fn get(self: &Self) -> int32 {
+        self.value
+    };
+
+    fn increment(self: &mut Self) -> Unit {
+        self.value = self.value + 1;
+    };
+}
+
+impl Counter: IsEmpty {
+    fn is_empty(self: &Self) -> bool {
+        self.value == 0
+    };
+}
+
+impl Counter: Resettable {
+    fn reset(self: &mut Self) -> Unit {
+        self.value = 0;
+    };
+}
+
+impl Status: IsEmpty {
+    fn is_empty(self: &Self) -> bool {
+        match self {
+            Pending -> true,
+            Ready   -> false,
+            Failed  -> false,
+        }
+    };
+}
+
+impl[T] Option(T): IsEmpty {
+    fn is_empty(self: &Self) -> bool {
+        match self {
+            None -> true,
+            Some -> false,
+        }
+    };
+}
+
+impl[T] Option(T) {
+    fn is_some(self: &Self) -> bool {
+        match self {
+            None -> false,
+            Some -> true,
+        }
+    };
+}
+
+impl Option(int32) {
+    fn is_none(self: &Self) -> bool {
+        match self {
+            None -> true,
+            Some -> false,
+        }
+    };
+}
+
+impl[T] Option(&T): IsPresent {
+    fn is_present(self: &Self) -> bool {
+        match self {
+            None -> false,
+            Some -> true,
+        }
+    };
+}

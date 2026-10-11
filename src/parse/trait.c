@@ -2,10 +2,11 @@
 
 #include "func.h"
 #include "parse.h"
-#include "smew/lex.h"
+#include "type.h"
 
 #include <smew/ast.h>
 #include <smew/diag.h>
+#include <smew/lex.h>
 #include <smew/parse.h>
 #include <smew/source.h>
 
@@ -92,4 +93,102 @@ AstTrait *parse_trait(Parser *parser) {
 
 	consume(parser, TOK_RBRACE);
 	return trait;
+}
+
+AstImpl *parse_impl(Parser *parser) {
+	assert(parser->cur->kind == TOK_KEY_IMPL && "Unexpected token kind");
+	consume(parser, TOK_KEY_IMPL);
+
+	AstImpl *impl = parser_alloc_one(parser, AstImpl);
+	impl->generics  = NULL;
+	impl->funcs     = NULL;
+	impl->self_args = NULL;
+	impl->trait     = NULL;
+
+	if (parser->cur->kind == TOK_LBRACKET) {
+		consume(parser, TOK_LBRACKET);
+		impl->generics = parse_generic_list(parser);
+		consume_or_insert(parser, TOK_RBRACKET, "closing bracket");
+	}
+
+	if (parser->cur->kind == TOK_IDENTIFIER) {
+		impl->self = consume_ident(parser);
+	} else {
+		add_diag_expected(&parser->diags, parser->cur->span,
+		                  "Unexpected token", "identifier");
+		impl->self = unknown_ident(parser);
+
+		if (parser->cur->kind != TOK_LPAREN && parser->cur->kind != TOK_COLON) {
+			parser->cur++;  // maybe it's a keyword or a literal?
+		}
+	}
+
+	if (parser->cur->kind == TOK_LPAREN) {
+		consume(parser, TOK_LPAREN);
+		impl->self_args = parse_type_list(parser);
+		consume_or_insert(parser, TOK_RPAREN, "closing parenthesis");
+	}
+
+	if (parser->cur->kind == TOK_COLON) {
+		consume(parser, TOK_COLON);
+
+		if (parser->cur->kind == TOK_IDENTIFIER) {
+			impl->trait = consume_ident(parser);
+		} else {
+			add_diag_expected(&parser->diags, parser->cur->span,
+			                  "Unexpected token", "identifier");
+			impl->trait = unknown_ident(parser);
+
+			if (parser->cur->kind != TOK_LBRACE) {
+				parser->cur++;  // maybe it's a keyword or a literal?
+			}
+		}
+	}
+
+	if (parser->cur->kind != TOK_LBRACE) {
+		add_diag_expected(&parser->diags, parser->cur->span,
+		                  "Unexpected token", "opening brace");
+
+		while (parser->cur->kind != TOK_LBRACE &&
+		       parser->cur->kind != TOK_RBRACE &&
+		       parser->cur->kind != TOK_EOF)
+		{
+			parser->cur++;
+		}
+
+		if (parser->cur->kind != TOK_LBRACE) {
+			impl->span = zero_span();
+			return impl;
+		}
+	}
+
+	consume(parser, TOK_LBRACE);
+
+	AstImplFunction **last = &impl->funcs;
+
+	while (parser->cur->kind != TOK_RBRACE && parser->cur->kind != TOK_EOF) {
+		(*last)             = parser_alloc_one(parser, AstImplFunction);
+		(*last)->func       = parser_alloc_one(parser, AstFunction);
+		(*last)->func->decl = parse_func_decl (parser);
+		(*last)->func->def  = NULL;
+		(*last)->next = NULL;
+
+		if (parser->cur->kind == TOK_LBRACE) {
+			parse_func_def_with_decl(parser, (*last)->func);
+		} else {
+			(*last)->func->span = (*last)->func->decl->span;
+			add_diag_expected(&parser->diags, parser->cur->span,
+			                  "Unexpected token", "function definition");
+		}
+
+		last = &(*last)->next;
+		consume_or_insert(parser, TOK_SEMICOLON, "semicolon");
+	}
+
+	if (guard_eof(parser)) {
+		return impl;
+	}
+
+	consume(parser, TOK_RBRACE);
+	return impl;
 }

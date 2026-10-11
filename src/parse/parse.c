@@ -214,6 +214,12 @@ static AstItem *parse_item(Parser *parser) {
 		item->span   = item->enumer->span;
 		break;
 
+	case TOK_KEY_IMPL:
+		item->kind = AST_ITEM_IMPL;
+		item->impl = parse_impl(parser);
+		item->span = item->impl->span;
+		break;
+
 	default:
 		add_diag_expected(&parser->diags, parser->cur->span, "Unexpected token", "item");
 		item->kind = AST_ITEM_UNKNOWN;

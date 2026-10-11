@@ -357,6 +357,25 @@ typedef struct {
 	AstTraitFunction *funcs;
 } AstTrait;
 
+typedef struct AstImplFunction AstImplFunction;
+struct AstImplFunction {
+	AstImplFunction *next;
+	AstFunction     *func;
+};
+
+typedef struct {
+	Span span;
+
+	AstGenericList *generics;
+
+	AstIdent    *self;
+	AstTypeList *self_args;
+
+	AstIdent *trait;  // NULL when impl is inherent
+
+	AstImplFunction *funcs;
+} AstImpl;
+
 typedef struct {
 	Span      span;
 	AstIdent *name;
@@ -382,6 +401,7 @@ typedef enum {
 	AST_ITEM_UNKNOWN,
 	AST_ITEM_FUNCTION,
 	AST_ITEM_TRAIT,
+	AST_ITEM_IMPL,
 	AST_ITEM_STRUCT,
 	AST_ITEM_ENUM,
 } AstItemKind;
@@ -394,6 +414,7 @@ typedef struct {
 		AstFunction *function;
 		AstStruct   *struc;
 		AstTrait    *trait;
+		AstImpl     *impl;
 		AstEnum     *enumer;
 	};
 } AstItem;

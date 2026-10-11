@@ -698,6 +698,80 @@ static void print_trait(PrintCtx ctx, const AstTrait *trait) {
 	set_next_sibling(deep(ctx, +1), 0);
 }
 
+static void print_impl(PrintCtx ctx, const AstImpl *impl) {
+	print_tab(ctx);
+	printf(CLR_GREEN "IMPL" CLR_END "\n");
+
+	set_next_sibling(ctx, 1);
+
+	if (impl->generics != NULL) {
+		print_tab(deep(ctx, +1));
+		printf(CLR_GREEN "GENERIC PARAMS" CLR_END "\n");
+
+		AstGenericList *generic = impl->generics;
+		while (generic != NULL) {
+			print_tab(deep(ctx, +2));
+			print_ident(ctx, generic->name);
+			putchar('\n');
+			generic = generic->next;
+		}
+	}
+
+	if (impl->funcs == NULL && impl->trait == NULL) {
+		set_next_sibling(ctx, 0);
+	}
+
+	print_tab(deep(ctx, +1));
+	printf(CLR_GREEN "SELF " CLR_END);
+	print_ident(ctx, impl->self);
+	putchar('\n');
+
+	if (impl->self_args != NULL) {
+		AstTypeList *self_arg = impl->self_args;
+
+		set_next_sibling(deep(ctx, +1), 1);
+		while (self_arg != NULL) {
+			if (self_arg->next == NULL) {
+				set_next_sibling(deep(ctx, +1), 0);
+			}
+			print_tab(deep(ctx, +2));
+			printf(CLR_GREEN "ARG" CLR_END "\n");
+			print_type(deep(ctx, +3), self_arg->arg);
+			self_arg = self_arg->next;
+		}
+	}
+
+	if (impl->funcs == NULL) {
+		set_next_sibling(ctx, 0);
+	}
+
+	if (impl->trait != NULL) {
+		print_tab(deep(ctx, +1));
+		printf(CLR_GREEN "TRAIT " CLR_END);
+		print_ident(ctx, impl->trait);
+		putchar('\n');
+	}
+
+	if (impl->funcs == NULL) return;
+
+	set_next_sibling(ctx, 0);
+
+	print_tab(deep(ctx, +1));
+	printf(CLR_GREEN "MEMBERS" CLR_END "\n");
+
+	set_next_sibling(deep(ctx, +1), 1);
+
+	AstImplFunction *func = impl->funcs;
+	while (func != NULL) {
+		if (func->next == NULL) {
+			set_next_sibling(deep(ctx, +1), 0);
+		}
+		print_func(deep(ctx, +2), func->func);
+		func = func->next;
+	}
+	set_next_sibling(deep(ctx, +1), 0);
+}
+
 static void print_enum_variants(PrintCtx ctx, const AstEnumMember *member) {
 	if (member->next == NULL) {
 		set_next_sibling(deep(ctx, -1), 0);
@@ -775,6 +849,9 @@ static void print_item(PrintCtx ctx, const AstItem *item) {
 		break;
 	case AST_ITEM_TRAIT:
 		print_trait(ctx, item->trait);
+		break;
+	case AST_ITEM_IMPL:
+		print_impl(ctx, item->impl);
 		break;
 	case AST_ITEM_ENUM:
 		print_enum(ctx, item->enumer);

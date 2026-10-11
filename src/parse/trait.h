@@ -5,5 +5,6 @@
 #include <smew/ast.h>
 
 AstTrait *parse_trait(Parser *parser);
+AstImpl  *parse_impl (Parser *parser);
 
 #endif
