@@ -66,6 +66,28 @@ AstIdent *unknown_ident(Parser *parser) {
 	return ident;
 }
 
+AstIdent *parse_required_ident(
+	Parser     *parser,
+	const char *message,
+	TokenKind   follow1,
+	TokenKind   follow2
+) {
+	if (parser->cur->kind == TOK_IDENTIFIER) {
+		return consume_ident(parser);
+	}
+
+	add_diag_expected(&parser->diags, parser->cur->span, message, "identifier");
+
+	AstIdent *ident = unknown_ident(parser);
+	TokenKind kind  = parser->cur->kind;
+
+	if (kind != follow1 && kind != follow2 && kind != TOK_EOF && kind != TOK_SEMICOLON) {
+		parser->cur++;  // maybe it's a keyword or a literal?
+	}
+
+	return ident;
+}
+
 int consume_or_insert(Parser *parser, TokenKind expect, const char *expect_str) {
 	if (parser->cur->kind != expect) {
 		add_diag_expected(&parser->diags, parser->cur->span,

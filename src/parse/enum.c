@@ -2,10 +2,10 @@
 
 #include "func.h"
 #include "parse.h"
-#include "smew/source.h"
 #include "type.h"
 
 #include <smew/lex.h>
+#include <smew/source.h>
 
 #include <assert.h>
 
@@ -18,17 +18,8 @@ AstEnum *parse_enum(Parser *parser) {
 	enumer->generics = NULL;
 	enumer->members  = NULL;
 
-	if (parser->cur->kind == TOK_IDENTIFIER) {
-		enumer->name = consume_ident(parser);
-	} else {
-		add_diag_expected(&parser->diags, parser->cur->span,
-		                  "Unexpected token", "identifier");
-		enumer->name = unknown_ident(parser);
-
-		if (parser->cur->kind != TOK_LBRACE && parser->cur->kind != TOK_LBRACKET) {
-			parser->cur++;  // maybe it's a keyword or a literal? TODO: repeated pattern
-		}
-	}
+	enumer->name = parse_required_ident(parser, "Unexpected token in enum declaration",
+	                                    TOK_LBRACE, TOK_LBRACKET);
 
 	if (parser->cur->kind == TOK_LBRACKET) {
 		consume(parser, TOK_LBRACKET);
@@ -65,17 +56,8 @@ AstEnum *parse_enum(Parser *parser) {
 		(*last)->payload = NULL;
 		(*last)->next    = NULL;
 
-		if (parser->cur->kind == TOK_IDENTIFIER) {
-			(*last)->name = consume_ident(parser);
-		} else {
-			add_diag_expected(&parser->diags, parser->cur->span,
-					  "Unexpected token", "identifier");
-			(*last)->name = unknown_ident(parser);
-
-			if (parser->cur->kind != TOK_LPAREN) {
-				parser->cur++;  // maybe it's a keyword or a literal?
-			}
-		}
+		(*last)->name = parse_required_ident(parser, "Unexpected token in enum member",
+		                                     TOK_LPAREN, TOK_EOF);
 
 		if (parser->cur->kind == TOK_LPAREN) {
 			consume(parser, TOK_LPAREN);

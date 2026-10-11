@@ -37,4 +37,6 @@ int       consume_or_insert(Parser *parser, TokenKind expect, const char *expect
 AstIdent *consume_ident(Parser *parser);
 AstIdent *unknown_ident(Parser *parser);
 
+AstIdent *parse_required_ident(Parser *parser, const char *msg, TokenKind flw1, TokenKind flw2);
+
 #endif

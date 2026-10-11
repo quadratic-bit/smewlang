@@ -227,17 +227,8 @@ static AstBind *parse_bind(Parser *parser) {
 
 	bind->mut = consume_maybe(parser, TOK_KEY_MUT);
 
-	if (parser->cur->kind != TOK_IDENTIFIER) {
-		add_diag_expected(&parser->diags, parser->cur->span,
-		                  "Unexpected token in bind expression", "identifier");
-		bind->name = unknown_ident(parser);
-
-		if (parser->cur->kind != TOK_COLON) {
-			parser->cur++;  // maybe it's a keyword or a literal?
-		}
-	} else {
-		bind->name = consume_ident(parser);
-	}
+	bind->name = parse_required_ident(parser, "Unexpected token in bind expression",
+	                                  TOK_COLON, TOK_EOF);
 
 	consume_or_insert(parser, TOK_COLON, "colon");
 
@@ -269,18 +260,8 @@ static AstMatchArg *parse_match_args(Parser *parser) {
 	case TOK_KEY_LET: {
 		consume(parser, TOK_KEY_LET);
 		arg->kind = AST_MATCH_CAPTURE;
-
-		if (parser->cur->kind == TOK_IDENTIFIER) {
-			arg->capture = consume_ident(parser);
-		} else {
-			add_diag_expected(&parser->diags, parser->cur->span,
-					  "Unexpected token", "identifier");
-			arg->capture = unknown_ident(parser);
-
-			if (parser->cur->kind != TOK_COMMA) {
-				parser->cur++;  // maybe it's a keyword or a literal?
-			}
-		}
+		arg->capture = parse_required_ident(parser, "Unexpected token in match capture",
+		                                    TOK_COMMA, TOK_EOF);
 		break;
 	}
 	// XXX: combine literals
@@ -334,18 +315,8 @@ static AstMatchArm *parse_match_arms(Parser *parser) {
 
 	const Token *tok_start = parser->cur;
 
-	// TODO: repeated pattern to expect an identifier
-	if (parser->cur->kind == TOK_IDENTIFIER) {
-		arm->name = consume_ident(parser);
-	} else {
-		add_diag_expected(&parser->diags, parser->cur->span,
-		                  "Unexpected token", "identifier");
-		arm->name = unknown_ident(parser);
-
-		if (parser->cur->kind != TOK_LPAREN && parser->cur->kind != TOK_ARROW) {
-			parser->cur++;  // maybe it's a keyword or a literal?
-		}
-	}
+	arm->name = parse_required_ident(parser, "Undexpected token in match arm",
+	                                 TOK_LPAREN, TOK_ARROW);
 
 	if (parser->cur->kind == TOK_LPAREN) {
 		consume(parser, TOK_LPAREN);
@@ -419,6 +390,7 @@ static AstWith *parse_with(Parser *parser) {
 	const Token *with_tok = parser->cur;
 	consume(parser, TOK_KEY_WITH);
 
+	// FIX: no check for LET
 	AstBind  *bind  = parse_bind(parser);
 	AstBlock *block = parse_block(parser);
 	with->bind = bind;
@@ -772,22 +744,9 @@ static AstLiteralStructField *parse_struct_lit_fields(Parser *parser) {
 	AstLiteralStructField *field = parser_alloc_one(parser, AstLiteralStructField);
 	field->next = NULL;
 
-	Span span_start, span_end;
+	Span span_start = parser->cur->span, span_end;
 
-	if (parser->cur->kind == TOK_IDENTIFIER) {
-		field->field = consume_ident(parser);
-		span_start = field->field->span;
-	} else {
-		add_diag_expected(&parser->diags, parser->cur->span,
-		                  "Unexpected token", "identifier");
-		field->field = unknown_ident(parser);
-
-		span_start = parser->cur->span;
-
-		if (parser->cur->kind != TOK_COLON) {
-			parser->cur++;  // maybe it's a keyword or a literal?
-		}
-	}
+	field->field = parse_required_ident(parser, "Unexpected token", TOK_COLON, TOK_EOF);
 
 	consume_or_insert(parser, TOK_COLON, "colon");
 

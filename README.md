@@ -19,9 +19,8 @@ Also no runtime reflection, but yes AST/syntax-based hygienic macros.
 
 Roadmap:
 - [x] Lexer
-- [ ] Parser  <-- I'm here
-- [ ] HIR lowering (a.k.a. desugaring)
-- [ ] Scope and name resolution
+- [x] Parser
+- [ ] Scope and name resolution  <-- I'm here
 - [ ] Semantic analysis (i.e. type checking)
 - [ ] MIR lowering
 - [ ] Simple (register-based?) VM

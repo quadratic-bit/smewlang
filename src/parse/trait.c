@@ -20,17 +20,8 @@ AstTrait *parse_trait(Parser *parser) {
 	trait->funcs = NULL;
 	trait->reqs  = NULL;
 
-	if (parser->cur->kind == TOK_IDENTIFIER) {
-		trait->name = consume_ident(parser);
-	} else {
-		add_diag_expected(&parser->diags, parser->cur->span,
-		                  "Unexpected token", "identifier");
-		trait->name = unknown_ident(parser);
-
-		if (parser->cur->kind != TOK_LBRACE) {
-			parser->cur++;  // maybe it's a keyword or a literal? TODO: repeated pattern
-		}
-	}
+	trait->name = parse_required_ident(parser, "Unexpected token in trait declaration",
+	                                   TOK_LBRACE, TOK_EOF);
 
 	if (parser->cur->kind == TOK_COLON) {
 		consume(parser, TOK_COLON);
@@ -111,17 +102,7 @@ AstImpl *parse_impl(Parser *parser) {
 		consume_or_insert(parser, TOK_RBRACKET, "closing bracket");
 	}
 
-	if (parser->cur->kind == TOK_IDENTIFIER) {
-		impl->self = consume_ident(parser);
-	} else {
-		add_diag_expected(&parser->diags, parser->cur->span,
-		                  "Unexpected token", "identifier");
-		impl->self = unknown_ident(parser);
-
-		if (parser->cur->kind != TOK_LPAREN && parser->cur->kind != TOK_COLON) {
-			parser->cur++;  // maybe it's a keyword or a literal?
-		}
-	}
+	impl->self = parse_required_ident(parser, "Unexpected token", TOK_LPAREN, TOK_COLON);
 
 	if (parser->cur->kind == TOK_LPAREN) {
 		consume(parser, TOK_LPAREN);
@@ -132,17 +113,7 @@ AstImpl *parse_impl(Parser *parser) {
 	if (parser->cur->kind == TOK_COLON) {
 		consume(parser, TOK_COLON);
 
-		if (parser->cur->kind == TOK_IDENTIFIER) {
-			impl->trait = consume_ident(parser);
-		} else {
-			add_diag_expected(&parser->diags, parser->cur->span,
-			                  "Unexpected token", "identifier");
-			impl->trait = unknown_ident(parser);
-
-			if (parser->cur->kind != TOK_LBRACE) {
-				parser->cur++;  // maybe it's a keyword or a literal?
-			}
-		}
+		impl->trait = parse_required_ident(parser, "Unexpected token", TOK_LBRACE, TOK_EOF);
 	}
 
 	if (parser->cur->kind != TOK_LBRACE) {
