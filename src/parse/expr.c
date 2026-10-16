@@ -244,7 +244,7 @@ static AstBind *parse_bind(Parser *parser) {
 		bind->value = unknown_expr(parser);
 		bind->span  = span_span(let_tok->span, parser->cur->span);
 	} else {
-		bind->span  = span_span(let_tok->span, bind->type->span);
+		bind->span  = span_span(let_tok->span, bind->value->any->span);
 	}
 
 	return bind;
