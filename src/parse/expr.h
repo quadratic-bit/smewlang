@@ -12,4 +12,6 @@ AstExpr *unknown_expr(Parser *parser);
 AstExpr *parse_expr        (Parser *parser, uint8_t min_bp);
 int      parse_and_sequence(Parser *parser, AstExpr **base);
 
+AstExpr *parse_required_expr(Parser *parser, uint8_t min_bp);
+
 #endif

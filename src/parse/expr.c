@@ -963,3 +963,15 @@ int parse_and_sequence(Parser *parser, AstExpr **base) {
 	*base = new_base;
 	return 1;
 }
+
+AstExpr *parse_required_expr(Parser *parser, uint8_t min_bp) {
+	AstExpr *expr = parse_expr(parser, min_bp);
+
+	if (expr == NULL) {
+		add_diag_expected(&parser->diags, parser->cur->span,
+		                  "Unexpected token", "expression");
+		return unknown_expr(parser);
+	}
+
+	return expr;
+}

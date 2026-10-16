@@ -109,7 +109,7 @@ static AstType *parse_type_postfix(Parser *parser, AstType *base, uint8_t min_bp
 			return new_base;
 		}
 
-		AstExpr *arr_len = parse_expr(parser, MIN_BP);
+		AstExpr *arr_len = parse_required_expr(parser, MIN_BP);
 		consume_or_insert(parser, TOK_RBRACKET, "closing bracket");
 
 		new_base->kind               = AST_TYPE_ARRAY_FIXED;
