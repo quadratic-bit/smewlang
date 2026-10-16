@@ -289,6 +289,11 @@ static AstMatchArg *parse_match_args(Parser *parser) {
 		arg->kind = AST_MATCH_BINDING;
 		arg->binding = consume_ident(parser);
 		break;
+	case TOK_RPAREN:
+		arg->kind = AST_MATCH_UNKOWN;
+		add_diag_expected(&parser->diags, parser->cur->span,
+				  "Empty match argument list", "arguments");
+		break;
 	default:
 		arg->kind = AST_MATCH_UNKOWN;
 		add_diag_expected(&parser->diags, parser->cur->span,
