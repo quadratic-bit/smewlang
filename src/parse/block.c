@@ -25,7 +25,7 @@ AstBlock *parse_block(Parser *parser) {
 	int changed = expr == NULL;
 
 	while (parser->cur->kind != TOK_RBRACE && parser->cur->kind != TOK_EOF) {
-		// syntactic error -- recover by inserting a semicolon or advanvcing a cursor
+		// syntactic error -- recover by inserting a semicolon or advancing a cursor
 
 		if (!changed) {
 			add_diag_expected(&parser->diags, parser->cur->span,
@@ -40,7 +40,7 @@ AstBlock *parse_block(Parser *parser) {
 	}
 
 	if (expr == NULL) {
-		expr = unknown_expr(parser);
+		expr = unit_expr(parser);
 	}
 	block->body = expr;
 
