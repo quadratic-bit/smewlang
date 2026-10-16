@@ -81,7 +81,7 @@ AstIdent *parse_required_ident(
 	AstIdent *ident = unknown_ident(parser);
 	TokenKind kind  = parser->cur->kind;
 
-	if (kind != follow1 && kind != follow2 && kind != TOK_EOF && kind != TOK_SEMICOLON) {
+	if (kind != follow1 && kind != follow2 && kind != TOK_EOF) {
 		parser->cur++;  // maybe it's a keyword or a literal?
 	}
 
