@@ -749,7 +749,8 @@ static AstLiteralStructField *parse_struct_lit_fields(Parser *parser) {
 	AstLiteralStructField *field = parser_alloc_one(parser, AstLiteralStructField);
 	field->next = NULL;
 
-	Span span_start = parser->cur->span, span_end;
+	Span span_start = parser->cur->span;
+	Span span_end;
 
 	field->field = parse_required_ident(parser, "Unexpected token", TOK_COLON, TOK_EOF);
 
@@ -764,7 +765,7 @@ static AstLiteralStructField *parse_struct_lit_fields(Parser *parser) {
 		span_end = parser->cur->span;
 	} else {
 		field->value = expr;
-		span_end = field->span;
+		span_end = field->value->any->span;
 	}
 
 	if (parser->cur->kind == TOK_COMMA) {
