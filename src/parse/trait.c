@@ -52,7 +52,7 @@ AstTrait *parse_trait(Parser *parser) {
 		}
 
 		if (parser->cur->kind != TOK_LBRACE) {
-			trait->span = zero_span();
+			trait->span = zero_span(parser);
 			return trait;
 		}
 	}
@@ -134,7 +134,7 @@ AstImpl *parse_impl(Parser *parser) {
 		}
 
 		if (parser->cur->kind != TOK_LBRACE) {
-			impl->span = zero_span();
+			impl->span = zero_span(parser);
 			return impl;
 		}
 	}

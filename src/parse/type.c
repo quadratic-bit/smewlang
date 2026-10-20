@@ -25,7 +25,7 @@ static BindingPower get_type_bp(TokenKind kind) {
 
 AstType *unknown_type(Parser *parser) {
 	AstType *base_type = parser_alloc_one(parser, AstType);
-	base_type->span = zero_span();
+	base_type->span = zero_span(parser);
 	base_type->kind = AST_TYPE_UNKNOWN;
 	return base_type;
 }

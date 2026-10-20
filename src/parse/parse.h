@@ -26,6 +26,8 @@ void *arena_alloc_guarded(Arena *arena, size_t size, size_t align);
 
 const Token *prev(const Parser *parser);
 
+Span zero_span(const Parser *parser);
+
 int guard_eof(Parser *parser);
 
 int is_item_start(TokenKind kind);

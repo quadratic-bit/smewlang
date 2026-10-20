@@ -20,7 +20,7 @@ typedef struct {
 } Span;
 
 Span span_span(Span left, Span right);
-Span zero_span(void);
+Span zero_span_from(Span cur);
 
 typedef struct {
 	size_t line_offset; // 0-based, in bytes

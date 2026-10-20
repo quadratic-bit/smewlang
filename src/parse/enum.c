@@ -41,7 +41,7 @@ AstEnum *parse_enum(Parser *parser) {
 		}
 
 		if (parser->cur->kind != TOK_LBRACE) {
-			enumer->span = zero_span();
+			enumer->span = zero_span(parser);
 			return enumer;
 		}
 	}

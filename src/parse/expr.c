@@ -210,7 +210,7 @@ AstExpr *unit_expr(Parser *parser) {
 
 	AstLiteral *lit = parser_alloc_one(parser, AstLiteral);
 	lit->kind = AST_LITERAL_UNIT;
-	lit->span = zero_span();
+	lit->span = zero_span(parser);
 
 	expr->literal = lit;
 
@@ -370,7 +370,7 @@ static AstMatch *parse_match(Parser *parser) {
 		}
 
 		if (parser->cur->kind != TOK_LBRACE) {
-			match->span = zero_span();
+			match->span = zero_span(parser);
 			return match;
 		}
 	}
@@ -395,7 +395,7 @@ static AstWith *parse_with(Parser *parser) {
 	const Token *with_tok = parser->cur;
 	consume(parser, TOK_KEY_WITH);
 
-	// FIX: no check for LET
+	// FIXME: no check for LET
 	AstBind  *bind  = parse_bind(parser);
 	AstBlock *block = parse_block(parser);
 	with->bind = bind;

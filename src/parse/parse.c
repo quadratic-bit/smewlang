@@ -60,9 +60,13 @@ AstIdent *consume_ident(Parser *parser) {
 	return ident;
 }
 
+Span zero_span(const Parser *parser) {
+	return zero_span_from(parser->cur->span);
+}
+
 AstIdent *unknown_ident(Parser *parser) {
 	AstIdent *ident = parser_alloc_one(parser, AstIdent);
-	ident->span = zero_span();
+	ident->span = zero_span(parser);
 	return ident;
 }
 

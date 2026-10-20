@@ -7,7 +7,7 @@
 
 AstBlock *empty_block(Parser *parser) {
 	AstBlock *block = parser_alloc_one(parser, AstBlock);
-	block->span = zero_span();
+	block->span = zero_span(parser);
 	block->body = unit_expr(parser);
 	return block;
 }

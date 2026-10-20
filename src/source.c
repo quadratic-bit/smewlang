@@ -1,6 +1,7 @@
 #include <smew/source.h>
 #include <smew/vec.h>
 
+#include <assert.h>
 #include <stdint.h>
 
 BufResult file_read(SourceFile *file, FILE *file_handler) {
@@ -52,9 +53,10 @@ SourceLocation locate_offset(const char *buffer, size_t offset) {
 }
 
 Span span_span(Span left, Span right) {
+	assert(right.start + right.len >= left.start && "Invalid span range");
 	return (Span){.start = left.start, .len = right.start + right.len - left.start};
 }
 
-Span zero_span(void) {
-	return (Span){.start = 0, .len = 0};
+Span zero_span_from(Span cur) {
+	return (Span){.start = cur.start, .len = 0};
 }
