@@ -154,6 +154,7 @@ static AstStruct *parse_def_struct(Parser *parser) {
 	consume(parser, TOK_KEY_STRUCT);
 
 	AstStruct *struct_def = parser_alloc_one(parser, AstStruct);
+	struct_def->fields = NULL;
 
 	if (parser->cur->kind == TOK_IDENTIFIER) {
 		struct_def->name = consume_ident(parser);
