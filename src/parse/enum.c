@@ -12,6 +12,8 @@
 
 AstEnum *parse_enum(Parser *parser) {
 	assert(parser->cur->kind == TOK_KEY_ENUM && "Unexpected token kind");
+
+	const Token *enum_tok = parser->cur;
 	consume(parser, TOK_KEY_ENUM);
 
 	AstEnum *enumer = parser_alloc_one(parser, AstEnum);
@@ -74,6 +76,8 @@ AstEnum *parse_enum(Parser *parser) {
 		consume_or_insert(parser, TOK_COMMA, "comma");
 
 	}
+
+	enumer->span = span_span(enum_tok->span, parser->cur->span);
 
 	if (guard_eof(parser)) {
 		return enumer;

@@ -1,6 +1,7 @@
 #include "func.h"
 #include "block.h"
 #include "parse.h"
+#include "smew/source.h"
 #include "type.h"
 
 #include <assert.h>
@@ -140,6 +141,8 @@ AstFunctionDeclaration *parse_func_decl(Parser *parser) {
 	consume_or_insert(parser, TOK_ARROW, "arrow");
 
 	func_decl->return_type = parse_type(parser, MIN_BP);
+
+	func_decl->span = span_span(decl_start_tok->span, func_decl->return_type->span);
 	return func_decl;
 }
 

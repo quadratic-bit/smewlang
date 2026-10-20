@@ -14,6 +14,8 @@
 
 AstTrait *parse_trait(Parser *parser) {
 	assert(parser->cur->kind == TOK_KEY_TRAIT && "Unexpected token kind");
+
+	const Token *trait_tok = parser->cur;
 	consume(parser, TOK_KEY_TRAIT);
 
 	AstTrait *trait = parser_alloc_one(parser, AstTrait);
@@ -78,6 +80,8 @@ AstTrait *parse_trait(Parser *parser) {
 		consume_or_insert(parser, TOK_SEMICOLON, "semicolon");
 	}
 
+	trait->span = span_span(trait_tok->span, parser->cur->span);
+
 	if (guard_eof(parser)) {
 		return trait;
 	}
@@ -88,6 +92,8 @@ AstTrait *parse_trait(Parser *parser) {
 
 AstImpl *parse_impl(Parser *parser) {
 	assert(parser->cur->kind == TOK_KEY_IMPL && "Unexpected token kind");
+
+	const Token *impl_tok = parser->cur;
 	consume(parser, TOK_KEY_IMPL);
 
 	AstImpl *impl = parser_alloc_one(parser, AstImpl);
@@ -155,6 +161,8 @@ AstImpl *parse_impl(Parser *parser) {
 		last = &(*last)->next;
 		consume_or_insert(parser, TOK_SEMICOLON, "semicolon");
 	}
+
+	impl->span = span_span(impl_tok->span, parser->cur->span);
 
 	if (guard_eof(parser)) {
 		return impl;
