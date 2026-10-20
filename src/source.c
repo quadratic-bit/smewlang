@@ -43,7 +43,6 @@ SourceLocation locate_offset(const char *buffer, size_t offset) {
 			line_offset = i;
 		}
 	}
-	if (buffer[0] == '\n') line++;
 
 	return (SourceLocation){
 		.line_offset = line_offset,
