@@ -393,23 +393,6 @@ static AstMatch *parse_match(Parser *parser) {
 	return match;
 }
 
-static AstWith *parse_with(Parser *parser) {
-	assert(parser->cur->kind == TOK_KEY_WITH && "Unexpected token kind");
-	AstWith *with = parser_alloc_one(parser, AstWith);
-
-	const Token *with_tok = parser->cur;
-	consume(parser, TOK_KEY_WITH);
-
-	// FIXME: no check for LET
-	AstBind  *bind  = parse_bind(parser);
-	AstBlock *block = parse_block(parser);
-	with->bind = bind;
-	with->body = block;
-	with->span = span_span(with_tok->span, block->span);
-
-	return with;
-}
-
 static AstBlock *parse_expected_block(Parser *parser, const char *message) {
 	if (parser->cur->kind == TOK_LBRACE) {
 		return parse_block(parser);
@@ -431,6 +414,25 @@ static AstBlock *parse_expected_block(Parser *parser, const char *message) {
 	}
 
 	return parse_block(parser);
+}
+
+static AstWith *parse_with(Parser *parser) {
+	assert(parser->cur->kind == TOK_KEY_WITH && "Unexpected token kind");
+	AstWith *with = parser_alloc_one(parser, AstWith);
+
+	const Token *with_tok = parser->cur;
+	consume(parser, TOK_KEY_WITH);
+
+	// FIXME: no check for LET
+	AstBind *bind = parse_bind(parser);
+	with->bind = bind;
+
+	AstBlock *block = parse_expected_block(parser, "Unexpected token after bind");
+	with->body = block;
+
+	with->span = span_span(with_tok->span, block->span);
+
+	return with;
 }
 
 static AstCondBlock *parse_cond_block(Parser *parser, int is_else) {
