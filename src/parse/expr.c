@@ -660,7 +660,9 @@ static AstExpr *parse_expr_prefix(Parser *parser) {
 	AstExpr *base_expr = parser_alloc_one(parser, AstExpr);
 
 	if (operand == NULL) {
-		operand = unit_expr(parser);
+		add_diag_expected(&parser->diags, parser->cur->span,
+				  "Unexpected token", "unary operand (expression)");
+		operand = unknown_expr(parser);
 	}
 
 	base_expr->kind = AST_EXPR_OP_UNARY;
