@@ -231,7 +231,7 @@ static AstBind *parse_bind(Parser *parser) {
 	bind->mut = consume_maybe(parser, TOK_KEY_MUT);
 
 	bind->name = parse_required_ident(parser, "Unexpected token in bind expression",
-	                                  TOK_COLON, TOK_EOF);
+	                                  TOK_COLON, TOK_SEMICOLON);
 
 	consume_or_insert(parser, TOK_COLON, "colon");
 
@@ -245,7 +245,7 @@ static AstBind *parse_bind(Parser *parser) {
 		add_diag_expected(&parser->diags, parser->cur->span,
 		                  "Unexpected token in bind expression", "expression");
 		bind->value = unknown_expr(parser);
-		bind->span  = span_span(let_tok->span, parser->cur->span);
+		bind->span  = span_span(let_tok->span, prev(parser)->span);
 	} else {
 		bind->span  = span_span(let_tok->span, bind->value->any->span);
 	}
@@ -259,7 +259,7 @@ static AstMatchArg *parse_match_args(Parser *parser) {
 
 	const Token *tok_start = parser->cur;
 
-	switch (parser->cur->kind) {
+	switch (tok_start->kind) {
 	case TOK_KEY_LET: {
 		consume(parser, TOK_KEY_LET);
 		arg->kind = AST_MATCH_CAPTURE;
@@ -305,7 +305,11 @@ static AstMatchArg *parse_match_args(Parser *parser) {
 		break;
 	}
 
-	arg->span = span_span(tok_start->span, prev(parser)->span);
+	if (tok_start->kind == TOK_RPAREN) {
+		arg->span = span_span(tok_start->span, parser->cur->span);
+	} else {
+		arg->span = span_span(tok_start->span, prev(parser)->span);
+	}
 
 	if (parser->cur->kind == TOK_RPAREN || parser->cur->kind == TOK_EOF) return arg;
 
@@ -339,7 +343,7 @@ static AstMatchArm *parse_match_arms(Parser *parser) {
 		add_diag_expected(&parser->diags, parser->cur->span,
 		                  "Unexpected token", "expression");
 		arm->expr = unit_expr(parser);
-		arm->span = span_span(tok_start->span, parser->cur->span);
+		arm->span = span_span(tok_start->span, prev(parser)->span);
 	} else {
 		arm->span = span_span(tok_start->span, arm->expr->any->span);
 	}

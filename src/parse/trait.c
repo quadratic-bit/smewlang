@@ -64,7 +64,7 @@ AstTrait *parse_trait(Parser *parser) {
 	while (parser->cur->kind != TOK_RBRACE && parser->cur->kind != TOK_EOF) {
 		(*last)             = parser_alloc_one(parser, AstTraitFunction);
 		(*last)->func       = parser_alloc_one(parser, AstFunction);
-		(*last)->func->decl = parse_func_decl (parser);
+		(*last)->func->decl = parse_func_decl (parser);  //FIXME: preconditions
 		(*last)->func->def  = NULL;
 		(*last)->next = NULL;
 
@@ -146,7 +146,7 @@ AstImpl *parse_impl(Parser *parser) {
 	while (parser->cur->kind != TOK_RBRACE && parser->cur->kind != TOK_EOF) {
 		(*last)             = parser_alloc_one(parser, AstImplFunction);
 		(*last)->func       = parser_alloc_one(parser, AstFunction);
-		(*last)->func->decl = parse_func_decl (parser);
+		(*last)->func->decl = parse_func_decl (parser);  // FIXME: preconditions
 		(*last)->func->def  = NULL;
 		(*last)->next = NULL;
 

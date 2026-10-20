@@ -122,7 +122,7 @@ static AstStructField *parse_struct_field(Parser *parser) {
 		                  "Unexpected token in struct field", "identifier");
 		Span start = parser->cur->span;
 		consume_until_semicolon_or_rbrace(parser);
-		Span end = parser->cur->span;
+		Span end = prev(parser)->span;
 		field->name = unknown_ident(parser);
 		field->type = unknown_type(parser);
 		field->span = span_span(start, end);
@@ -168,7 +168,7 @@ static AstStruct *parse_def_struct(Parser *parser) {
 		}
 		struct_def->name = unknown_ident(parser);
 		if (parser->cur->kind != TOK_LBRACE) {
-			struct_def->span   = span_span(struct_tok->span, parser->cur->span);
+			struct_def->span   = span_span(struct_tok->span, prev(parser)->span);
 			struct_def->fields = NULL;
 			return struct_def;
 		}
