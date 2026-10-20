@@ -77,7 +77,7 @@ AstGenericList *parse_generic_list(Parser *parser) {
 AstFunctionDeclaration *parse_func_decl(Parser *parser) {
 	assert((parser->cur->kind == TOK_KEY_PUB ||
 	        parser->cur->kind == TOK_KEY_FN) &&
-	        "Function declaration must start with `fn` or `pub`");
+	       "Function declaration must start with `fn` or `pub`");
 
 	const Token *decl_start_tok = parser->cur;
 

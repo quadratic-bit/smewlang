@@ -12,6 +12,21 @@
 
 #include <assert.h>
 
+static void recover_to_function(Parser *parser) {
+	while (parser->cur->kind != TOK_KEY_FN    &&
+	       parser->cur->kind != TOK_KEY_PUB   &&
+	       parser->cur->kind != TOK_SEMICOLON &&
+	       parser->cur->kind != TOK_RBRACE    &&
+	       parser->cur->kind != TOK_EOF)
+	{
+		parser->cur++;
+	}
+
+	if (parser->cur->kind == TOK_SEMICOLON) {
+		consume(parser, TOK_SEMICOLON);
+	}
+}
+
 AstTrait *parse_trait(Parser *parser) {
 	assert(parser->cur->kind == TOK_KEY_TRAIT && "Unexpected token kind");
 
@@ -62,9 +77,16 @@ AstTrait *parse_trait(Parser *parser) {
 	AstTraitFunction **last = &trait->funcs;
 
 	while (parser->cur->kind != TOK_RBRACE && parser->cur->kind != TOK_EOF) {
+		if (parser->cur->kind != TOK_KEY_FN && parser->cur->kind != TOK_KEY_PUB) {
+			add_diag_expected(&parser->diags, parser->cur->span,
+			                  "Unexpected token in trait body", "function declaration");
+			recover_to_function(parser);
+			continue;
+		}
+
 		(*last)             = parser_alloc_one(parser, AstTraitFunction);
 		(*last)->func       = parser_alloc_one(parser, AstFunction);
-		(*last)->func->decl = parse_func_decl (parser);  //FIXME: preconditions
+		(*last)->func->decl = parse_func_decl (parser);
 		(*last)->func->def  = NULL;
 		(*last)->next = NULL;
 
@@ -144,9 +166,16 @@ AstImpl *parse_impl(Parser *parser) {
 	AstImplFunction **last = &impl->funcs;
 
 	while (parser->cur->kind != TOK_RBRACE && parser->cur->kind != TOK_EOF) {
+		if (parser->cur->kind != TOK_KEY_FN && parser->cur->kind != TOK_KEY_PUB) {
+			add_diag_expected(&parser->diags, parser->cur->span,
+			                  "Unexpected token in impl body", "function declaration");
+			recover_to_function(parser);
+			continue;
+		}
+
 		(*last)             = parser_alloc_one(parser, AstImplFunction);
 		(*last)->func       = parser_alloc_one(parser, AstFunction);
-		(*last)->func->decl = parse_func_decl (parser);  // FIXME: preconditions
+		(*last)->func->decl = parse_func_decl (parser);
 		(*last)->func->def  = NULL;
 		(*last)->next = NULL;
 
