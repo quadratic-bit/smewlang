@@ -750,9 +750,9 @@ static AstTypeAppl *parse_type_application(Parser *parser, AstExpr *base) {
 
 	consume_or_insert(parser, TOK_RBRACKET, "closing parenthesis");
 
-	appl->args   = args;
+	appl->args      = args;
 	appl->applicant = base;
-	appl->span   = span_span(base->any->span, parser->cur->span);
+	appl->span      = span_span(base->any->span, prev(parser)->span);
 
 	return appl;
 }
@@ -804,8 +804,10 @@ static AstLiteral *parse_literal_struct(Parser *parser, AstIdent *name) {
 	if (parser->cur->kind == TOK_RBRACE) {
 		consume(parser, TOK_RBRACE);
 		struc->fields = NULL;
+
 		lit->struc = struc;
-		lit->span  = span_span(name->span, parser->cur->span);
+		lit->span  = span_span(name->span, prev(parser)->span);
+
 		return lit;
 	}
 
@@ -814,7 +816,7 @@ static AstLiteral *parse_literal_struct(Parser *parser, AstIdent *name) {
 	consume_or_insert(parser, TOK_RBRACE, "closing brace");
 
 	lit->struc = struc;
-	lit->span  = span_span(name->span, parser->cur->span);
+	lit->span  = span_span(name->span, prev(parser)->span);
 	return lit;
 }
 
@@ -882,7 +884,7 @@ static AstExpr *parse_expr_infix(Parser *parser, AstExpr *base, uint8_t min_bp) 
 
 		call->callee = base;
 		call->args   = args;
-		call->span   = span_span(base->any->span, parser->cur->span);
+		call->span   = span_span(base->any->span, prev(parser)->span);
 
 		new_base->call = call;
 
@@ -905,7 +907,7 @@ static AstExpr *parse_expr_infix(Parser *parser, AstExpr *base, uint8_t min_bp) 
 
 		consume_or_insert(parser, TOK_RBRACKET, "closing bracket");
 
-		index->span     = span_span(base->any->span, parser->cur->span);
+		index->span     = span_span(base->any->span, prev(parser)->span);
 		new_base->index = index;
 		return new_base;
 	}

@@ -67,7 +67,7 @@ AstEnum *parse_enum(Parser *parser) {
 			consume_or_insert(parser, TOK_RPAREN, "closing parenthesis");
 		}
 
-		(*last)->span = span_span(variant_start->span, parser->cur->span);
+		(*last)->span = span_span(variant_start->span, prev(parser)->span);
 
 		last = &(*last)->next;
 

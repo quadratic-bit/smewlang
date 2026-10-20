@@ -48,7 +48,7 @@ AstBlock *parse_block(Parser *parser) {
 		consume(parser, TOK_RBRACE);
 	}
 
-	block->span = span_span(block_start->span, parser->cur->span);
+	block->span = span_span(block_start->span, prev(parser)->span);
 
 	return block;
 }
