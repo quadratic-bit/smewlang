@@ -146,6 +146,8 @@ int is_item_start(TokenKind kind) {
 	       kind == TOK_KEY_STRUCT ||
 	       kind == TOK_KEY_PUB    ||
 	       kind == TOK_KEY_TRAIT  ||
+	       kind == TOK_KEY_ENUM   ||
+	       kind == TOK_KEY_IMPL   ||
 	       kind == TOK_EOF;
 }
 
