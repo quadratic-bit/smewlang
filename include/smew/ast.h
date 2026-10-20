@@ -269,11 +269,13 @@ typedef enum {
 	AST_EXPR_IDENT,
 } AstExprKind;
 
+typedef struct { Span span; } AstExprAny;
+
 struct AstExpr {
 	AstExprKind kind;
 
 	union {
-		struct { Span span; } *any;
+		AstExprAny *any;
 
 		AstBlock    *block;
 		AstBranch   *branch;

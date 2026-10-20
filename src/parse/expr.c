@@ -200,6 +200,9 @@ AstExpr *unknown_expr(Parser *parser) {
 	AstExpr *expr = parser_alloc_one(parser, AstExpr);
 	expr->kind = AST_EXPR_UNKNOWN;
 
+	expr->any = parser_alloc_one(parser, AstExprAny);
+	expr->any->span = zero_span(parser);
+
 	return expr;
 }
 
