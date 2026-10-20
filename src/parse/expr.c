@@ -220,12 +220,7 @@ AstExpr *unit_expr(Parser *parser) {
 	return expr;
 }
 
-static AstBind *parse_bind(Parser *parser) {
-	assert(parser->cur->kind == TOK_KEY_LET && "Unexpected token kind");
-	const Token *let_tok = parser->cur;
-
-	consume(parser, TOK_KEY_LET);
-
+static AstBind *parse_bind_body(Parser *parser, Span start) {
 	AstBind *bind = parser_alloc_one(parser, AstBind);
 
 	bind->mut = consume_maybe(parser, TOK_KEY_MUT);
@@ -245,12 +240,21 @@ static AstBind *parse_bind(Parser *parser) {
 		add_diag_expected(&parser->diags, parser->cur->span,
 		                  "Unexpected token in bind expression", "expression");
 		bind->value = unknown_expr(parser);
-		bind->span  = span_span(let_tok->span, prev(parser)->span);
+		bind->span  = span_span(start, prev(parser)->span);
 	} else {
-		bind->span  = span_span(let_tok->span, bind->value->any->span);
+		bind->span  = span_span(start, bind->value->any->span);
 	}
 
 	return bind;
+}
+
+static AstBind *parse_bind(Parser *parser) {
+	assert(parser->cur->kind == TOK_KEY_LET);
+
+	const Token *start = parser->cur;
+	consume(parser, TOK_KEY_LET);
+
+	return parse_bind_body(parser, start->span);
 }
 
 static AstMatchArg *parse_match_args(Parser *parser) {
@@ -423,6 +427,16 @@ static AstBlock *parse_expected_block(Parser *parser, const char *message) {
 	return parse_block(parser);
 }
 
+static AstBind *unknown_bind(Parser *parser) {
+	AstBind *bind = parser_alloc_one(parser, AstBind);
+	bind->mut   = 0;
+	bind->name  = unknown_ident(parser);
+	bind->span  = zero_span(parser);
+	bind->type  = unknown_type(parser);
+	bind->value = unknown_expr(parser);
+	return bind;
+}
+
 static AstWith *parse_with(Parser *parser) {
 	assert(parser->cur->kind == TOK_KEY_WITH && "Unexpected token kind");
 	AstWith *with = parser_alloc_one(parser, AstWith);
@@ -430,9 +444,20 @@ static AstWith *parse_with(Parser *parser) {
 	const Token *with_tok = parser->cur;
 	consume(parser, TOK_KEY_WITH);
 
-	// FIXME: no check for LET
-	AstBind *bind = parse_bind(parser);
-	with->bind = bind;
+	if (parser->cur->kind == TOK_KEY_LET) {
+		with->bind = parse_bind(parser);
+	} else {
+		add_diag_expected(&parser->diags, parser->cur->span,
+		                  "Unexpected token after `with`", "`let`");
+
+		if (parser->cur->kind == TOK_IDENTIFIER || parser->cur->kind == TOK_KEY_MUT) {
+			// assume `let` was omitted
+			with->bind = parse_bind_body(parser, parser->cur->span);
+		} else {
+			// dunno
+			with->bind = unknown_bind(parser);
+		}
+	}
 
 	AstBlock *block = parse_expected_block(parser, "Unexpected token after bind");
 	with->body = block;
