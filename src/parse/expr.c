@@ -357,6 +357,11 @@ static AstMatch *parse_match(Parser *parser) {
 	consume(parser, TOK_KEY_MATCH);
 
 	match->operand = parse_expr(parser, BINDING_SEMICOLON);
+	if (match->operand == NULL) {
+		add_diag_expected(&parser->diags, parser->cur->span,
+		                  "Unexpected token in match expression", "expression");
+		match->operand = unknown_expr(parser);
+	}
 
 	if (parser->cur->kind != TOK_LBRACE) {
 		add_diag_expected(&parser->diags, parser->cur->span,
